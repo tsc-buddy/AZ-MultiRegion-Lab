@@ -1,8 +1,9 @@
 # Collect & set parameters
 $location = Read-Host "Please specify the Azure region to deploy the virtual machine scale set to."
 $vnetName = Read-Host "Please specify the name of the virtual network to deploy the virtual machine scale set to."
-$vmssName = "vmss-" + [System.IO.Path]::GetRandomFileName().Replace(".", "").Substring(0, 8)
-$rgname = "rg-" + [System.IO.Path]::GetRandomFileName().Replace(".", "").Substring(0, 8)
+$randomString = [System.IO.Path]::GetRandomFileName().Replace(".", "").Substring(0, 8)
+$vmssName = "vmss-" + $randomString
+$rgname = "rg-" + $randomString
 $adminUsername = "adminuser"
 $adminPassword = Read-Host -Prompt "Enter a secure password for the VMSS Nodes." -AsSecureString
 
@@ -41,37 +42,37 @@ $selectedSubnet = $subnets[$selectedSubnetIndex - 1]
 Write-Output "Selected Subnet: $($selectedSubnet.Name)"
 
 # Set the ipConfig for the VMSS based on the selected subnet
-$subnetId = $selectedSubnet.Id
+
 $ipConfig = New-AzVmssIpConfig `
     -Name "ipconfig1" `
-    -SubnetId $subnetId
+    -SubnetId $selectedSubnet.Id
 
 # Create a new virtual machine scale set config object
  
+# Create a new virtual machine scale set config object
 $vmssConfig = New-AzVmssConfig `
     -Location $location `
     -SkuCapacity 3 `
-    -SkuName "Standard_DS2_v2" `
-    -UpgradePolicyMode "Automatic"
-
-    $vmssConfig = $vmssConfig | Set-AzVmssStorageProfile `
-    -OsDiskCreateOption "FromImage" `
-    -OsDiskCaching "ReadWrite" `
-    -ImageReferencePublisher "MicrosoftWindowsServer" `
+    -SkuName "Standard_D2s_v5" `
+    -UpgradePolicyMode "Automatic" `
+    -Zone 1,2,3 `
+    -ZoneBalance $true |
+    Set-AzVmssStorageProfile `
+        -OsDiskCreateOption "FromImage" `
+        -OsDiskCaching "ReadWrite" `
+        -ImageReferencePublisher "MicrosoftWindowsServer" `
         -ImageReferenceOffer "WindowsServer" `
         -ImageReferenceSku "2022-datacenter" `
         -ImageReferenceVersion "latest" `
-        -OsDiskOsType "Windows"
-
-    $vmssConfig = $vmssConfig |Set-AzVmssOsProfile `
-    -ComputerNamePrefix 'vmss' `
-    -AdminUsername $adminUsername `
-    -AdminPassword $adminPassword
-
-    $vmssConfig = $vmssConfig | Add-AzVmssNetworkInterfaceConfiguration `
-    -Name "nicconfig1" `
-    -Primary $true `
-    -IPConfiguration $ipConfig 
+        -OsDiskOsType "Windows" |
+    Set-AzVmssOsProfile `
+        -ComputerNamePrefix 'vmss' `
+        -AdminUsername $adminUsername `
+        -AdminPassword $adminPassword |
+    Add-AzVmssNetworkInterfaceConfiguration `
+        -Name "nicconfig1" `
+        -Primary $true `
+        -IPConfiguration $ipConfig
 
 # Create Resource group and VMSS Instance
 New-AzResourceGroup -ResourceGroupName $rgname -Location $location
