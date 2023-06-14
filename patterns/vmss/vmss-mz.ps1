@@ -1,6 +1,6 @@
 # Collect parameters
-$location = read-host "Please provide the Azure Region you wish to deploy the VMSS into."
-$vnetName = read-Host "Please provide the name of the Virtual Network you wish to provision the multi-zone VMSS into."
+$location = "australiaeast"
+$vnetName = "vnet01"
 
 $vmssName = "vmss-" + [System.IO.Path]::GetRandomFileName().Replace(".", "").Substring(0, 8)
 $rgname = "rg-" + [System.IO.Path]::GetRandomFileName().Replace(".", "").Substring(0, 8)
@@ -37,23 +37,50 @@ if ($selectedSubnetIndex -le 0 -or $selectedSubnetIndex -gt $subnets.Count) {
 # Get the selected subnet and store it in a variable
 $selectedSubnet = $subnets[$selectedSubnetIndex - 1]
 
+
+
 # Use the selected subnet as needed
 Write-Output "Selected Subnet: $($selectedSubnet.Name)"
 
-New-AzResourceGroup -ResourceGroupName $rgname -Location $location
+
+$subnetId = $selectedSubnet.Id
+$subnetId
+$ipConfig = New-AzVmssIpConfig `
+    -Name "ipconfig1" `
+    -SubnetId $subnetId
 
 # Create a new virtual machine scale set with three zones
+ 
+###########################
 
+$vmssConfig = New-AzVmssConfig `
+    -Location $location `
+    -SkuCapacity 3 `
+    -SkuName "Standard_DS2_v2" `
+    -UpgradePolicyMode "Automatic"
+
+    $vmssConfig = $vmssConfig | Set-AzVmssStorageProfile `
+    -OsDiskCreateOption "FromImage" `
+    -OsDiskCaching "ReadWrite" `
+    -ImageReferencePublisher "MicrosoftWindowsServer" `
+        -ImageReferenceOffer "WindowsServer" `
+        -ImageReferenceSku "2022-datacenter" `
+        -ImageReferenceVersion "latest" `
+        -OsDiskOsType "Windows"
+
+    $vmssConfig = $vmssConfig |Set-AzVmssOsProfile `
+    -ComputerNamePrefix 'vmss' `
+    -AdminUsername ''`
+    -AdminPassword '' 
+
+    $vmssConfig = $vmssConfig | Add-AzVmssNetworkInterfaceConfiguration `
+    -Name "nicconfig1" `
+    -Primary $true `
+    -IPConfiguration $ipConfig 
+
+New-AzResourceGroup -ResourceGroupName $rgname -Location $location
 New-AzVmss `
     -ResourceGroupName $rgname `
-    -Location $location `
-    -VMScaleSetName $vmssName `
-    -VirtualNetworkName $vnetName `
-    -SubnetName $selectedSubnet.Name `
-    -PublicIpAddressName "pip-$vmssName" `
-    -LoadBalancerName "lb-$vmssName" `
-    -BackendPort 80 `
-    -Zone 1,2,3 `
-    -SkuName "Standard_DS1_v2" `
-    -UpgradePolicyMode "Automatic" `
-    -HealthProbeName "healthprobe-$vmssName"
+    -Name $vmssName `
+    -VirtualMachineScaleSet $vmssConfig `
+    -Verbose
