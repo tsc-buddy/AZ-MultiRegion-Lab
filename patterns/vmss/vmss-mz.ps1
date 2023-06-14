@@ -1,4 +1,4 @@
-# Collect parameters
+# Collect & set parameters
 $location = Read-Host "Please specify the Azure region to deploy the virtual machine scale set to."
 $vnetName = Read-Host "Please specify the name of the virtual network to deploy the virtual machine scale set to."
 $vmssName = "vmss-" + [System.IO.Path]::GetRandomFileName().Replace(".", "").Substring(0, 8)
@@ -9,7 +9,7 @@ $adminPassword = Read-Host -Prompt "Enter a secure password for the VMSS Nodes."
 # Get the virtual network by name
 $virtualNetwork = Get-AzVirtualNetwork -Name $vnetName
 
-# Check if the virtual network exists
+# Check if the virtual network exists before continuing
 if (!$virtualNetwork) {
     Write-Error "Virtual network '$vnetName' not found."
     exit 1
@@ -37,22 +37,17 @@ if ($selectedSubnetIndex -le 0 -or $selectedSubnetIndex -gt $subnets.Count) {
 # Get the selected subnet and store it in a variable
 $selectedSubnet = $subnets[$selectedSubnetIndex - 1]
 
-
-
 # Use the selected subnet as needed
 Write-Output "Selected Subnet: $($selectedSubnet.Name)"
 
-
+# Set the ipConfig for the VMSS based on the selected subnet
 $subnetId = $selectedSubnet.Id
-$subnetId
 $ipConfig = New-AzVmssIpConfig `
     -Name "ipconfig1" `
     -SubnetId $subnetId
 
-# Create a new virtual machine scale set with three zones
+# Create a new virtual machine scale set config object
  
-###########################
-
 $vmssConfig = New-AzVmssConfig `
     -Location $location `
     -SkuCapacity 3 `
@@ -78,6 +73,7 @@ $vmssConfig = New-AzVmssConfig `
     -Primary $true `
     -IPConfiguration $ipConfig 
 
+# Create Resource group and VMSS Instance
 New-AzResourceGroup -ResourceGroupName $rgname -Location $location
 New-AzVmss `
     -ResourceGroupName $rgname `
