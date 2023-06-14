@@ -1,10 +1,10 @@
 # Collect parameters
-$location = "australiaeast"
-$vnetName = "vnet01"
-
+$location = Read-Host "Please specify the Azure region to deploy the virtual machine scale set to."
+$vnetName = Read-Host "Please specify the name of the virtual network to deploy the virtual machine scale set to."
 $vmssName = "vmss-" + [System.IO.Path]::GetRandomFileName().Replace(".", "").Substring(0, 8)
 $rgname = "rg-" + [System.IO.Path]::GetRandomFileName().Replace(".", "").Substring(0, 8)
-
+$adminUsername = "adminuser"
+$adminPassword = Read-Host -Prompt "Enter a secure password for the VMSS Nodes." -AsSecureString
 
 # Get the virtual network by name
 $virtualNetwork = Get-AzVirtualNetwork -Name $vnetName
@@ -70,8 +70,8 @@ $vmssConfig = New-AzVmssConfig `
 
     $vmssConfig = $vmssConfig |Set-AzVmssOsProfile `
     -ComputerNamePrefix 'vmss' `
-    -AdminUsername ''`
-    -AdminPassword '' 
+    -AdminUsername $adminUsername `
+    -AdminPassword $adminPassword
 
     $vmssConfig = $vmssConfig | Add-AzVmssNetworkInterfaceConfiguration `
     -Name "nicconfig1" `
