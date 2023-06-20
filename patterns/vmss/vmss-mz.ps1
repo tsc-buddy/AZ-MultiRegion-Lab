@@ -55,6 +55,8 @@ $vmssConfig = New-AzVmssConfig `
     -SkuCapacity 3 `
     -SkuName "Standard_D2s_v5" `
     -UpgradePolicyMode "Automatic" `
+    -OrchestrationMode "Flexible" `
+    -PlatformFaultDomainCount 1 `
     -Zone 1,2,3 `
     -ZoneBalance $true |
     Set-AzVmssStorageProfile `
