@@ -3,7 +3,7 @@ $location = Read-Host "Please specify the Azure region to deploy the virtual mac
 $vnetName = Read-Host "Please specify the name of the virtual network to deploy the virtual machine scale set to."
 $randomString = [System.IO.Path]::GetRandomFileName().Replace(".", "").Substring(0, 8)
 $vmssName = "vmss-" + $randomString
-$rgname = "rg-" + $randomString
+$rgname = "az-vmm-rg"
 $adminUsername = "adminuser"
 $adminPassword = Read-Host -Prompt "Enter a secure password for the VMSS Nodes." -AsSecureString
 
@@ -41,13 +41,79 @@ $selectedSubnet = $subnets[$selectedSubnetIndex - 1]
 # Use the selected subnet as needed
 Write-Output "Selected Subnet: $($selectedSubnet.Name)"
 
+# Create Resource group and VMSS Instance
+New-AzResourceGroup -ResourceGroupName $rgname -Location $location
+
+# Create an Azure Load Balancer with a public IP address that has the VMSS as the backend on port 80
+$publicip = @{
+    Name = "vmss-pip-$randomString"
+    ResourceGroupName = $rgname
+    Location = $location
+    Sku = 'Standard'
+    AllocationMethod = 'static'
+    Zone = 1,2,3
+}
+New-AzPublicIpAddress @publicip
+
+## Place public IP created in previous steps into variable. ##
+$pip = @{
+    Name = "vmss-pip-$randomString"
+    ResourceGroupName = $rgname
+}
+$publicIp = Get-AzPublicIpAddress @pip
+
+## Create load balancer frontend configuration and place in variable. ##
+$fip = @{
+    Name = 'frontEndConfig'
+    PublicIpAddress = $publicIp 
+}
+$feip = New-AzLoadBalancerFrontendIpConfig @fip
+
+## Create backend address pool configuration and place in variable. ##
+$bepool = New-AzLoadBalancerBackendAddressPoolConfig -Name 'VMSS-BackEndPool'
+
+## Create the health probe and place in variable. ##
+$probe = @{
+    Name = 'vmss-HealthProbe'
+    Protocol = 'tcp'
+    Port = '80'
+    IntervalInSeconds = '360'
+    ProbeCount = '5'
+}
+$healthprobe = New-AzLoadBalancerProbeConfig @probe
+
+## Create the load balancer rule and place in variable. ##
+$lbrule = @{
+    Name = 'vmss-HTTPRule'
+    Protocol = 'tcp'
+    FrontendPort = '80'
+    BackendPort = '80'
+    IdleTimeoutInMinutes = '15'
+    FrontendIpConfiguration = $feip
+    BackendAddressPool = $bePool
+    Probe = $healthprobe
+}
+$rule = New-AzLoadBalancerRuleConfig @lbrule -EnableTcpReset -DisableOutboundSNAT
+
+## Create the load balancer resource. ##
+$loadbalancer = @{
+    ResourceGroupName = $rgname
+    Name = "vmss-lb-$randomString"
+    Location = $location
+    Sku = 'Standard'
+    FrontendIpConfiguration = $feip
+    BackendAddressPool = $bePool
+    LoadBalancingRule = $rule
+    Probe = $healthprobe
+}
+New-AzLoadBalancer @loadbalancer
+
 # Set the ipConfig for the VMSS based on the selected subnet
 
 $ipConfig = New-AzVmssIpConfig `
     -Name "ipconfig1" `
-    -SubnetId $selectedSubnet.Id
-
-# Create a new virtual machine scale set config object
+    -SubnetId $selectedSubnet.Id `
+    -LoadBalancerBackendAddressPoolsId $bePool.Id
  
 # Create a new virtual machine scale set config object
 $vmssConfig = New-AzVmssConfig `
@@ -55,8 +121,7 @@ $vmssConfig = New-AzVmssConfig `
     -SkuCapacity 3 `
     -SkuName "Standard_D2s_v5" `
     -UpgradePolicyMode "Automatic" `
-    -OrchestrationMode "Flexible" `
-    -PlatformFaultDomainCount 1 `
+    -platformFaultDomainCount 1 `
     -Zone 1,2,3 `
     -ZoneBalance $true |
     Set-AzVmssStorageProfile `
@@ -76,26 +141,10 @@ $vmssConfig = New-AzVmssConfig `
         -Primary $true `
         -IPConfiguration $ipConfig
 
-# Create Resource group and VMSS Instance
-New-AzResourceGroup -ResourceGroupName $rgname -Location $location
+# Create the Azure virtual machine scale set
 New-AzVmss `
     -ResourceGroupName $rgname `
     -Name $vmssName `
     -VirtualMachineScaleSet $vmssConfig `
     -Verbose
-
-# Create a load balancer in front of the VMSS
-
-$publicIp = New-AzPublicIpAddress -ResourceGroupName $rgName -Name "vmss-pip-$randomString" -Sku "Standard" -Zone 1,2,3 -AllocationMethod "Static" -Location $location
-$frontendIpConfig = New-AzLoadBalancerFrontendIpConfig -Name "lbFrontendIp" -PublicIpAddress $publicIp
-$backendPool = New-AzLoadBalancerBackendAddressPoolConfig -Name "vmssBackendPool"
-$loadBalancerConfig = New-AzLoadBalancerConfig -Name "lbConfig" -FrontendIpConfiguration $frontendIpConfig -BackendAddressPool $backendPool
-$vmssConfig = $vmssConfig | Add-AzVmssLoadBalancerBackendAddressPoolConfig -Name "vmssBackendPool" -LoadBalancerBackendAddressPool $backendPool
-$healthProbe = New-AzLoadBalancerProbeConfig -Name "vmssProbe" -Protocol "Tcp" -Port 80 -IntervalInSeconds 15 -NumberOfProbes 4
-$loadBalancerConfig = $loadBalancerConfig | Add-AzLoadBalancerProbeConfig -Name "vmssProbe" -LoadBalancerProbe $healthProbe
-$loadBalancingRule = New-AzLoadBalancerRuleConfig -Name "vmssRule" -Protocol "Tcp" -FrontendPort 80 -BackendPort 80 -BackendAddressPool $backendPool -Probe $healthProbe
-$loadBalancerConfig = $loadBalancerConfig | Add-AzLoadBalancerRuleConfig -Name "lbRule" -LoadBalancerRule $loadBalancingRule
-$loadBalancer = New-AzLoadBalancer -ResourceGroupName $rgName -Name "vmss-lb-$randomString" -Location $location -FrontendIpConfiguration $frontendIpConfig -LoadBalancerSku "Standard" -LoadBalancerRules $loadBalancingRule -Probes $healthProbe -BackendAddressPools $backendPool
-$vmssConfig = $vmssConfig | Set-AzVmssLoadBalancer -LoadBalancerId $loadBalancer.Id -BackendPoolName "vmssBackendPool"
-Update-AzVmss -ResourceGroupName $rgname -VMScaleSetName $vmssName -VirtualMachineScaleSet $vmssConfig
-
+Write-Output "VMSS '$vmssName' created successfully."
