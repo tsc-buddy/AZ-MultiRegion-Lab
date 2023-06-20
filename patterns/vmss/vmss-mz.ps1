@@ -81,3 +81,19 @@ New-AzVmss `
     -Name $vmssName `
     -VirtualMachineScaleSet $vmssConfig `
     -Verbose
+
+# Create a load balancer in front of the VMSS
+
+$publicIp = New-AzPublicIpAddress -ResourceGroupName $rgName -Name "vmss-pip-$randomString" -Sku "Standard" -Zone 1,2,3 -AllocationMethod "Static" -Location $location
+$frontendIpConfig = New-AzLoadBalancerFrontendIpConfig -Name "lbFrontendIp" -PublicIpAddress $publicIp
+$backendPool = New-AzLoadBalancerBackendAddressPoolConfig -Name "vmssBackendPool"
+$loadBalancerConfig = New-AzLoadBalancerConfig -Name "lbConfig" -FrontendIpConfiguration $frontendIpConfig -BackendAddressPool $backendPool
+$vmssConfig = $vmssConfig | Add-AzVmssLoadBalancerBackendAddressPoolConfig -Name "vmssBackendPool" -LoadBalancerBackendAddressPool $backendPool
+$healthProbe = New-AzLoadBalancerProbeConfig -Name "vmssProbe" -Protocol "Tcp" -Port 80 -IntervalInSeconds 15 -NumberOfProbes 4
+$loadBalancerConfig = $loadBalancerConfig | Add-AzLoadBalancerProbeConfig -Name "vmssProbe" -LoadBalancerProbe $healthProbe
+$loadBalancingRule = New-AzLoadBalancerRuleConfig -Name "vmssRule" -Protocol "Tcp" -FrontendPort 80 -BackendPort 80 -BackendAddressPool $backendPool -Probe $healthProbe
+$loadBalancerConfig = $loadBalancerConfig | Add-AzLoadBalancerRuleConfig -Name "lbRule" -LoadBalancerRule $loadBalancingRule
+$loadBalancer = New-AzLoadBalancer -ResourceGroupName $rgName -Name "vmss-lb-$randomString" -Location $location -FrontendIpConfiguration $frontendIpConfig -LoadBalancerSku "Standard" -LoadBalancerRules $loadBalancingRule -Probes $healthProbe -BackendAddressPools $backendPool
+$vmssConfig = $vmssConfig | Set-AzVmssLoadBalancer -LoadBalancerId $loadBalancer.Id -BackendPoolName "vmssBackendPool"
+Update-AzVmss -ResourceGroupName $rgname -VMScaleSetName $vmssName -VirtualMachineScaleSet $vmssConfig
+
