@@ -11,5 +11,3 @@ The following azure services / patterns for Multi Zone and Multi Region brownfie
 - Azure Kubernetes Services
 - Standalone Azure SQL
 - Two Tier Application running on App Services and Azure SQL
-
-- 
