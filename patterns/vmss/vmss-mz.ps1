@@ -39,7 +39,7 @@ if ($selectedSubnetIndex -le 0 -or $selectedSubnetIndex -gt $subnets.Count) {
 $selectedSubnet = $subnets[$selectedSubnetIndex - 1]
 
 # Use the selected subnet as needed
-Write-Output "Selected Subnet: $($selectedSubnet.Name)"
+Write-Host -ForegroundColor Blue "Selected Subnet for deployment: $($selectedSubnet.Name)"
 
 # Create Resource group and VMSS Instance
 New-AzResourceGroup -ResourceGroupName $rgname -Location $location
@@ -108,6 +108,8 @@ $loadbalancer = @{
 }
 New-AzLoadBalancer @loadbalancer
 
+Write-Host -ForegroundColor Blue "Load Balancer '$($loadbalancer.Name)' created successfully. Moving onto VMSS creation."
+
 # Set the ipConfig for the VMSS based on the selected subnet
 
 $ipConfig = New-AzVmssIpConfig `
@@ -147,4 +149,5 @@ New-AzVmss `
     -Name $vmssName `
     -VirtualMachineScaleSet $vmssConfig `
     -Verbose
-Write-Output "VMSS '$vmssName' created successfully."
+Write-Host -ForegroundColor Blue "VMSS '$vmssName' created successfully."
+
