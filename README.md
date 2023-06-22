@@ -25,3 +25,27 @@ Given that the artifacts within the repo are designed to address resiliency gaps
 - Single Region Multi Zone Deployment
     - Virtual Network where both the VMSS and Load Balancer will reside
     - A subnet in the above VNET for targeting the deployment into
+
+**Deployment Steps**
+
+**Login to Azure** - Ensure you are in the correct context for deploying the chosen patterns resources into into.
+
+![alt-text](docs/images/login.png)
+
+**Check your context**
+
+```text
+    Get-AzContext
+```
+
+**Run the deployment script** - VMSS for example. You will be prompted to provide the Azure region you wish to deploy into.
+![alt-text](docs/images/runandlocation.png)
+
+**Provide the name of the Virtual Network you wish to deploy into**
+![alt-text](docs/images/vnet.png)
+
+**Provide the password you wish to use for the VMSS**
+![alt-text](docs/images/vmss-pw.png)
+
+**Select from the subnet list**  - You will be prompted with an Index of subnets available within your chosen Virtual network, select one to connect your LB and VMSS into
+![alt-text](docs/images/selectedsubnet.png)
