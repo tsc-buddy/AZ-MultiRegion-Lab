@@ -25,5 +25,3 @@ Given that the artifacts within the repo are designed to address resiliency gaps
 - Single Region Multi Zone Deployment
     - Virtual Network where both the VMSS and Load Balancer will reside
     - A subnet in the above VNET for targeting the deployment into
-
-    
