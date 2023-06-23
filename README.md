@@ -23,7 +23,13 @@ Given that the artifacts within the repo are designed to address resiliency gaps
 **Existing Resource Requirements**
 
 - Single Region Multi Zone Deployment
-    - Virtual Network where both the VMSS and Load Balancer will reside
+    - Ensure you select an Azure Region that supports availability zones
+    - Existing Virtual Network where both the VMSS and Load Balancer will reside
+    - A subnet in the above VNET for targeting the deployment into
+
+- Multi Region Multi Zone Deployment
+    - Ensure you select two Azure Region that supports availability zones
+    - Existing Virtual Networks in both regions where the VMSS and Load Balancer will reside
     - A subnet in the above VNET for targeting the deployment into
 
 **Deployment Steps**
@@ -37,8 +43,9 @@ Given that the artifacts within the repo are designed to address resiliency gaps
 ```text
     Get-AzContext
 ```
+#### The following steps will vary between single region and multi region deployments. Just make sure the prerequisites are met and you should experience no issues.
 
-**Run the deployment script** - VMSS for example. You will be prompted to provide the Azure region you wish to deploy into.
+**Run the deployment script** - Single Region VMSS for example. You will be prompted to provide the Azure region you wish to deploy into.
 ![alt-text](docs/images/runandlocation.png)
 
 **Provide the name of the Virtual Network you wish to deploy into**
