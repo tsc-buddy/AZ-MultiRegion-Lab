@@ -215,16 +215,12 @@ $tmRGName = "vmss-tm-rg"
 New-AzResourceGroup -name $tmRGName -location $tmRGlocation
 
 ## Create the traffic manager profile.
-$tm = New-AzTrafficManagerProfile -Name $tmName -ResourceGroupName $tmRGName -TrafficRoutingMethod Performance -RelativeDnsName $tmdnsName -Ttl 30 -MonitorProtocol HTTP -MonitorPort 80 -MonitorPath "/"
+New-AzTrafficManagerProfile -Name $tmName -ResourceGroupName $tmRGName -TrafficRoutingMethod Performance -RelativeDnsName $tmdnsName -Ttl 30 -MonitorProtocol HTTP -MonitorPort 80 -MonitorPath "/"
 
-
-Write-Host -ForegroundColor Blue  "Traffic Manager profile '$($tm.Name)' created successfully. Moving onto VMSS creation."
-
-
-Write-Host -ForegroundColor Blue "Please provide the details for the first multi zone vmss deployment."
+Write-Host -ForegroundColor Blue "Please provide the details for the first multi zone vmss deployment. IMPORTANT: Please ensure that the region you are selecting support Availability Zones."
 
 vmssCreation -tmName $tmName -tmRGName $tmRGName
 
-Write-Host -ForegroundColor Blue "Please provide the details for the second multi zone vmss deployment. This one will be in a different region."
+Write-Host -ForegroundColor Blue "Please provide the details for the second multi zone vmss deployment. IMPORTANT: Please ensure that the region you are selecting support Availability Zones."
 
 vmssCreation -tmName $tmName -tmRGName $tmRGName
