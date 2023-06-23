@@ -62,6 +62,14 @@ $pip = @{
 }
 $publicIp = Get-AzPublicIpAddress @pip
 
+if ($publicIp.ProvisioningState -ne 'Succeeded') {
+    Write-Error "Public IP creation failed."
+    exit 1
+}
+else {
+    Write-Host -ForegroundColor Blue "Public IP created successfully."
+}
+
 ## Create load balancer frontend configuration and place in variable. ##
 $fip = @{
     Name = 'frontEndConfig'
@@ -108,7 +116,15 @@ $loadbalancer = @{
 }
 New-AzLoadBalancer @loadbalancer
 
-Write-Host -ForegroundColor Blue "Load Balancer '$($loadbalancer.Name)' created successfully. Moving onto VMSS creation."
+$lbResource = Get-AzLoadBalancer -Name $loadbalancer.Name -ResourceGroupName $rgname
+
+if ($lbResource.ProvisioningState -ne 'Succeeded') {
+    Write-Error "Load Balancer creation failed."
+    exit 1
+}
+else {
+    Write-Host -ForegroundColor Blue "Load Balancer created successfully. Moving onto VMSS creation."
+}
 
 # Set the ipConfig for the VMSS based on the selected subnet
 
@@ -149,5 +165,14 @@ New-AzVmss `
     -Name $vmssName `
     -VirtualMachineScaleSet $vmssConfig `
     -Verbose
-Write-Host -ForegroundColor Blue "VMSS '$vmssName' created successfully."
+
+$vmssResource = Get-AzVmss -VMScaleSetName $vmssName -ResourceGroupName $rgname
+
+if ($vmssResource.ProvisioningState -ne 'Succeeded') {
+    Write-Error "VMSS creation failed."
+    exit 1
+}
+else {
+    Write-Host -ForegroundColor Blue "VMSS '$vmssName' created successfully."
+}
 
