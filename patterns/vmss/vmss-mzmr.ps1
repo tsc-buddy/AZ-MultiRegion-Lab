@@ -83,7 +83,7 @@ function vmssCreation{
         exit 1
     }
     else {
-        Write-Host-ForegroundColor Blue "Public IP created successfully."
+        Write-Host -ForegroundColor Blue "Public IP created successfully."
     }
 
     ## Create load balancer frontend configuration and place in variable. ##
