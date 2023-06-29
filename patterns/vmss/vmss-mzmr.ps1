@@ -157,9 +157,9 @@ function vmssCreation{
         -SkuCapacity 3 `
         -SkuName "Standard_D2s_v5" `
         -UpgradePolicyMode "Automatic" `
+        -OrchestrationMode "Flexible" `
         -platformFaultDomainCount 1 `
-        -Zone 1,2,3 `
-        -ZoneBalance $true |
+        -Zone 1,2,3 |
         Set-AzVmssStorageProfile `
             -OsDiskCreateOption "FromImage" `
             -OsDiskCaching "ReadWrite" `
