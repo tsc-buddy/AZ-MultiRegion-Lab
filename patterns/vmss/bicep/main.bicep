@@ -15,15 +15,56 @@ param instanceCount int = 3
 
 // Parameter for the VMSS Sku
 @sys.description('The SKU for the VMSS Instance you wish to deploy')
-param vmSku string = 'Standard_DS1_v2'
+param vmSku string = 'Standard_D2s_v5'
+
+@allowed([
+  'ubuntulinux'
+  'windowsserver'
+])
+param os string = 'windowsserver'
 
 @sys.description('The local admin username')
 param adminUsername string = 'adminuser'
 
 @sys.description('The admin password for the VMSS instance.')
-@secure()
-param adminPassword string
+@allowed([
+  'password'
+  'sshPublicKey'
+])
+param authenticationType string = 'password'
 
+@secure()
+param adminPasswordOrKey string
+
+var linuxConfiguration = {
+  disablePasswordAuthentication: true
+  provisionVMAgent: true
+  ssh: {
+    publicKeys: [
+      {
+        path: '/home/${adminUsername}/.ssh/authorized_keys'
+        keyData: adminPasswordOrKey
+      }
+    ]
+  }
+}
+var linuxImageReference = {
+  publisher: 'Canonical'
+  offer: 'UbuntuServer'
+  sku: '18_04-LTS-Gen2'
+  version: 'latest'
+}
+var windowsImageReference = {
+  publisher: 'MicrosoftWindowsServer'
+  offer: 'WindowsServer'
+  sku: '2019-Datacenter'
+  version: 'latest'
+}
+var windowsConfiguration =  {
+  timeZone: 'Pacific Standard Time'
+}
+var networkApiVersion = '2020-11-01'
+var imageReference = (os == 'ubuntulinux' ? linuxImageReference : windowsImageReference)
 var lbName  = '${vmssName}-lb'
 var lbFrontEndName = '${vmssName}-lb-frontend'
 var lbBackEndName = '${vmssName}-lb-backend'
@@ -54,47 +95,62 @@ resource vmss 'Microsoft.Compute/virtualMachineScaleSets@2022-11-01' = {
   }
   properties: {
     orchestrationMode: 'Flexible'
+    singlePlacementGroup: false
     platformFaultDomainCount: 1
-    upgradePolicy: {
-      mode: 'Automatic'
-    }
     virtualMachineProfile: {
-      storageProfile: {
-        imageReference: {
-          publisher: 'Canonical'
-          offer: 'UbuntuServer'
-          sku: '16.04-LTS'
-          version: 'latest'
-        }
-        osDisk: {
-          createOption: 'FromImage'
-        }
-      }
+ 
       osProfile: {
-        computerNamePrefix: 'vmss'
+        computerNamePrefix: 'myVm'
         adminUsername: adminUsername
-        adminPassword: adminPassword
+        adminPassword: (authenticationType== 'password' ? adminPasswordOrKey: null)
+        linuxConfiguration: (os=='ubuntulinux' && authenticationType == 'sshPublicKey'? linuxConfiguration : null)
+        windowsConfiguration: (os=='windowsserver' ? windowsConfiguration : null)
       }
       networkProfile: {
+        networkApiVersion: networkApiVersion
         networkInterfaceConfigurations: [
-          {
-            name: '${vmssName}-nicconfig'
+            {
+            name: '${vmssName}NicConfig01'
             properties: {
               primary: true
+              enableAcceleratedNetworking: false
               ipConfigurations: [
                 {
-                  name: '${vmssName}-ipconfig'
+                  name: '${vmssName}IpConfig'
                   properties: {
+                    publicIPAddressConfiguration: {
+                      name: '${vmssName}PipConfig'
+                      properties:{
+                        publicIPAddressVersion: 'IPv4'
+                        idleTimeoutInMinutes: 5
+                      }
+                    }
+                    privateIPAddressVersion: 'IPv4'
                     subnet: {
                       id: subnet.id
                     }
-                    primary: true
+                    loadBalancerBackendAddressPools: loadBalancer.properties.backendAddressPools
                   }
                 }
               ]
             }
           }
         ]
+      }
+      diagnosticsProfile: {
+        bootDiagnostics: {
+          enabled: true
+        }
+      }
+      storageProfile: {
+        osDisk: {
+          createOption: 'FromImage'
+          caching: 'ReadWrite'
+          managedDisk: {
+            storageAccountType: 'Premium_LRS'
+          }
+        }
+        imageReference: imageReference
       }
     }
   }
