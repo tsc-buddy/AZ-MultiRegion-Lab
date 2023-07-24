@@ -81,7 +81,7 @@ resource subnet 'Microsoft.Network/virtualNetworks/subnets@2023-02-01' existing 
   parent: vnet
 }
 
-resource vmss 'Microsoft.Compute/virtualMachineScaleSets@2022-11-01' = {
+resource vmss 'Microsoft.Compute/virtualMachineScaleSets@2023-03-01' = {
   name: vmssName
   location: location
   zones: [
@@ -100,7 +100,7 @@ resource vmss 'Microsoft.Compute/virtualMachineScaleSets@2022-11-01' = {
     virtualMachineProfile: {
  
       osProfile: {
-        computerNamePrefix: 'myVm'
+        computerNamePrefix: 'vmss'
         adminUsername: adminUsername
         adminPassword: (authenticationType== 'password' ? adminPasswordOrKey: null)
         linuxConfiguration: (os=='ubuntulinux' && authenticationType == 'sshPublicKey'? linuxConfiguration : null)
@@ -118,13 +118,6 @@ resource vmss 'Microsoft.Compute/virtualMachineScaleSets@2022-11-01' = {
                 {
                   name: '${vmssName}IpConfig'
                   properties: {
-                    publicIPAddressConfiguration: {
-                      name: '${vmssName}PipConfig'
-                      properties:{
-                        publicIPAddressVersion: 'IPv4'
-                        idleTimeoutInMinutes: 5
-                      }
-                    }
                     privateIPAddressVersion: 'IPv4'
                     subnet: {
                       id: subnet.id
