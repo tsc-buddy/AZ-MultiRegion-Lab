@@ -3,10 +3,12 @@ param multiRegionDeployment bool = false
 
 @sys.description('Specify the primary VMSS Instance admin password or SSH Key.')
 @secure()
+@minLength(12)
 param vmssOneAdminPasswordOrKey string
 
 @sys.description('Specify the Secondary VMSS Instance admin password or SSH Key.')
 @secure()
+@minLength(12)
 param vmssTwoAdminPasswordOrKey string
 
 @sys.description('Specify the primary Azure region you wish to deploy a AZ ready VMSS into.')
