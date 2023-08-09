@@ -18,10 +18,12 @@ param secondaryLocation string = 'australiaeast'
 @description('The names of the virtual network you wish to deploy the new VMSS instance into. The first record will be for primary VMSS, second record for secondary VMSS.')
 param vnetName array = [
   'vmss-vnet'
+  'vmss-vnet'
 ]
 
 @description('The name of the subnet within the provided VNET that you wish to deploy the new VMSS instance into. The first record will be for primary VMSS, second record for secondary VMSS.')
 param subnetName array = [
+  'default'
   'default'
 ]
 

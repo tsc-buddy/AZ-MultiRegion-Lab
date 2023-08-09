@@ -42,18 +42,6 @@ param authenticationType string
 @secure()
 param adminPasswordOrKey string
 
-@description('Optional. This property can be used by user in the request to enable or disable the Host Encryption for the virtual machine. This will enable the encryption for all the disks including Resource/Temp disk at host itself. For security reasons, it is recommended to set encryptionAtHost to True. Restrictions: Cannot be enabled if Azure Disk Encryption (guest-VM encryption using bitlocker/DM-Crypt) is enabled on your virtual machine scale sets.')
-param encryptionAtHost bool = true
-
-@description('Optional. Specifies the SecurityType of the virtual machine scale set. It is set as TrustedLaunch to enable UefiSettings.')
-param securityType string = ''
-
-@description('Optional. Specifies whether secure boot should be enabled on the virtual machine scale set. This parameter is part of the UefiSettings. SecurityType should be set to TrustedLaunch to enable UefiSettings.')
-param secureBootEnabled bool = false
-
-@description('Optional. Specifies whether vTPM should be enabled on the virtual machine scale set. This parameter is part of the UefiSettings.  SecurityType should be set to TrustedLaunch to enable UefiSettings.')
-param vTpmEnabled bool = false
-
 var linuxConfiguration = {
   disablePasswordAuthentication: true
   provisionVMAgent: true
@@ -118,14 +106,6 @@ resource vmss 'Microsoft.Compute/virtualMachineScaleSets@2023-03-01' = {
         adminPassword: (authenticationType== 'password' ? adminPasswordOrKey: null)
         linuxConfiguration: (os=='ubuntulinux' && authenticationType == 'sshPublicKey'? linuxConfiguration : null)
         windowsConfiguration: (os=='windowsserver' ? windowsConfiguration : null)
-      }
-      securityProfile: {
-        encryptionAtHost: encryptionAtHost
-        securityType: securityType
-        uefiSettings: {
-          secureBootEnabled: secureBootEnabled
-          vTpmEnabled: vTpmEnabled
-        }
       }
       networkProfile: {
         networkApiVersion: networkApiVersion
