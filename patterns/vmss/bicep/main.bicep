@@ -1,5 +1,5 @@
 @sys.description('Set to true to deploy a VMSS in two regions wiht supporting Traffic Manager.')
-param multiRegionDeployment bool = true
+param multiRegionDeployment bool = false
 
 @sys.description('Specify the primary VMSS Instance admin password or SSH Key.')
 @secure()
@@ -10,22 +10,16 @@ param vmssOneAdminPasswordOrKey string
 param vmssTwoAdminPasswordOrKey string
 
 @sys.description('Specify the primary Azure region you wish to deploy a AZ ready VMSS into.')
-param primaryLocation string = 'australiaeast'
+param primaryLocation string = 'eastus'
 
 @sys.description('Optional - Specify the secondary Azure region you wish to deploy your second AZ ready VMSS into.')
-param secondaryLocation string = 'australiaeast'
+param secondaryLocation string = 'eastus2'
 
 @description('The names of the virtual network you wish to deploy the new VMSS instance into. The first record will be for primary VMSS, second record for secondary VMSS.')
-param vnetName array = [
-  'vmss-vnet'
-  'vmss-vnet'
-]
+param vnetName array = []
 
 @description('The name of the subnet within the provided VNET that you wish to deploy the new VMSS instance into. The first record will be for primary VMSS, second record for secondary VMSS.')
-param subnetName array = [
-  'default'
-  'default'
-]
+param subnetName array = []
 
 @description('The Instance count for VMSS.')
 param instanceCount int = 3
@@ -70,7 +64,7 @@ param vmNamePrefix array = [
 ]
 
 module regionOneVMSS 'modules/vmss.bicep' = {
-  name: 'vmss-1'
+  name: vmssIdentifier[0]
   scope: resourceGroup()
   params: {
     vmssName: '${vmssIdentifier[0]}-${uniqueString(resourceGroup().id)}'
@@ -89,7 +83,7 @@ module regionOneVMSS 'modules/vmss.bicep' = {
 }
 
 module regionTwoVMSS 'modules/vmss.bicep' = if (multiRegionDeployment) {
-  name: 'vmss-2'
+  name: vmssIdentifier[1]
   scope: resourceGroup()
   params: {
     vmssName: '${vmssIdentifier[1]}-${uniqueString(resourceGroup().id)}'
