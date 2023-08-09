@@ -34,3 +34,10 @@ Given that the artifacts within the repo are designed to address resiliency gaps
 **Deployment Options**
 
 We are focusing our efforts on providing deployments options based on both Azure Bicep and Terraform. You will find some patterns contain options for Azure CLI or Azure Powershell, however these will not be our active focus moving forward.
+
+# Contribution
+
+# Contribution
+
+
+![Contributors](https://contrib.rocks/image?repo=tsc-buddy/WA-MZ-MR-Patterns)
