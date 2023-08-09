@@ -1,15 +1,14 @@
 # WA-MZ-MR-Patterns (Pilot)
 
 
-### The content is in full development as of 22/060/23. 
+### The content is in full development as of 01/07/23. 
 
 This repo contains Multi-Zone and Multi-Region Patterns for various Azure Architecture patterns. The following azure services / patterns for Multi Zone and Multi Region **brownfields** deployments will be as followed:
 
 - Virtual Machine Scale Sets
-- Azure Kubernetes Services
 - Standalone Azure SQL
+- Azure Kubernetes Services
 - Two Tier Application running on App Services and Azure SQL
-
 
 ## Prerequisites
 
@@ -32,27 +31,6 @@ Given that the artifacts within the repo are designed to address resiliency gaps
     - Existing Virtual Networks in both regions where the VMSS and Load Balancer will reside
     - A subnet in the above VNET for targeting the deployment into
 
-**Deployment Steps**
+**Deployment Options**
 
-**Login to Azure** - Ensure you are in the correct context for deploying the chosen patterns resources into into.
-
-![alt-text](docs/images/login.png)
-
-**Check your context**
-
-```text
-    Get-AzContext
-```
-#### The following steps will vary between single region and multi region deployments. Just make sure the prerequisites are met and you should experience no issues.
-
-**Run the deployment script** - Single Region VMSS for example. You will be prompted to provide the Azure region you wish to deploy into.
-![alt-text](docs/images/runandlocation.png)
-
-**Provide the name of the Virtual Network you wish to deploy into**
-![alt-text](docs/images/vnet.png)
-
-**Provide the password you wish to use for the VMSS**
-![alt-text](docs/images/vmss-pw.png)
-
-**Select from the subnet list**  - You will be prompted with an Index of subnets available within your chosen Virtual network, select one to connect your LB and VMSS into
-![alt-text](docs/images/selectedsubnet.png)
+We are focusing our efforts on providing deployments options based on both Azure Bicep and Terraform. You will find some patterns contain options for Azure CLI or Azure Powershell, however these will not be our active focus moving forward.
