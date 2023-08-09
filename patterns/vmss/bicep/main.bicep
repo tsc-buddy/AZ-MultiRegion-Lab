@@ -30,19 +30,20 @@ param subnetName array = [
 @description('The Instance count for VMSS.')
 param instanceCount int = 3
 
-@description('The SKU for the VMSS Instance you wish to deploy')
+@description('The VM SKU for the VMSS Instance you wish to deploy')
 param vmSku string = 'Standard_D2s_v5'
 
-@description('The local admin username')
+@description('The local admin username for the VMSS instance.')
 param adminUsername string = 'adminuser'
 
-@description('Specify the Zones you wish to deploy into')
+@description('Specify the Availability Zones you wish to deploy into')
 param zones array = [
   '1'
   '2'
   '3'
 ]
 
+@description('The type of OS you wish to use for the VMSS Instance.')
 @allowed([
   'ubuntulinux'
   'windowsserver'
@@ -56,7 +57,7 @@ param os string = 'windowsserver'
 ])
 param authenticationType string = 'password'
 
-@description('Used to give each VMSS Instance a unique name')
+@description('The authentication type for the VMSS instance. This will be determined by the OS you choose.')
 param vmssIdentifier array = [
   'vmss-1'
   'vmss-2'
@@ -103,5 +104,30 @@ module regionTwoVMSS 'modules/vmss.bicep' = if (multiRegionDeployment) {
     authenticationType: authenticationType
     adminUsername: adminUsername
     adminPasswordOrKey: vmssTwoAdminPasswordOrKey
+  }
+}
+
+module trafficManagerProfile 'modules/trafficManager.bicep' = if (multiRegionDeployment) {
+  name: 'trafficManager'
+  scope: resourceGroup()
+  params: {
+    tmName: 'traffic-manager-${uniqueString(resourceGroup().id)}'
+    relativeName: 'tm-uniquesname'
+    endpointID: [
+      regionOneVMSS.outputs.publicIpID
+      regionTwoVMSS.outputs.publicIpID
+    ]
+    endpointfqdn: [
+      regionOneVMSS.outputs.publicIpFQDN
+      regionTwoVMSS.outputs.publicIpFQDN
+    ]
+    location: [
+      secondaryLocation
+      primaryLocation
+    ]
+    endpointName: [
+      regionOneVMSS.name
+      regionTwoVMSS.name
+    ]
   }
 }

@@ -1,10 +1,12 @@
-metadata name = 'Traffic Manager Profile Module'
-metadata description = 'This module deploys a Traffic Manager Profile.'
-metadata owner = 'GCS Tech Strategy'
-
-@description('Required. Name of the Traffic Manager.')
+@description('The name of the Traffic Manager Profile.')
 @minLength(1)
-param name string
+param tmName string
+
+@description('The names of the endpoints.')
+param endpointName array
+
+@description('The Azure Region for each of the endpoints.')
+param location array
 
 @description('Optional. The status of the Traffic Manager profile.')
 @allowed([
@@ -38,7 +40,8 @@ param monitorConfig object = {
 }
 
 @description('Optional. The list of endpoints in the Traffic Manager profile.')
-param endpoints array = []
+param endpointID array
+param endpointfqdn array
 
 @description('Optional. Indicates whether Traffic View is \'Enabled\' or \'Disabled\' for the Traffic Manager profile. Null, indicates \'Disabled\'. Enabling this feature will increase the cost of the Traffic Manage profile.')
 @allowed([
@@ -50,103 +53,37 @@ param trafficViewEnrollmentStatus string = 'Disabled'
 @description('Optional. Maximum number of endpoints to be returned for MultiValue routing type.')
 param maxReturn int = 1
 
-@description('Optional. Specifies the number of days that logs will be kept for; a value of 0 will retain data indefinitely.')
-@minValue(0)
-@maxValue(365)
-param diagnosticLogsRetentionInDays int = 365
-
-@description('Optional. Resource ID of the diagnostic storage account.')
-param diagnosticStorageAccountId string = ''
-
-@description('Optional. Resource ID of the diagnostic log analytics workspace.')
-param diagnosticWorkspaceId string = ''
-
-@description('Optional. Resource ID of the diagnostic event hub authorization rule for the Event Hubs namespace in which the event hub should be created or streamed to.')
-param diagnosticEventHubAuthorizationRuleId string = ''
-
-@description('Optional. Name of the diagnostic event hub within the namespace to which logs are streamed. Without this, an event hub is created for each log category.')
-param diagnosticEventHubName string = ''
-
-@allowed([
-  ''
-  'CanNotDelete'
-  'ReadOnly'
-])
-@description('Optional. Specify the type of lock.')
-param lock string = ''
-
-@description('Optional. Resource tags.')
-param tags object = {}
-
-@description('Optional. Enable telemetry via a Globally Unique Identifier (GUID).')
-param enableDefaultTelemetry bool = true
-
-@description('Optional. The name of logs that will be streamed. "allLogs" includes all possible logs for the resource. Set to \'\' to disable log collection.')
-@allowed([
-  ''
-  'allLogs'
-  'ProbeHealthStatusEvents'
-])
-param diagnosticLogCategoriesToEnable array = [
-  'allLogs'
-]
-
-@description('Optional. The name of metrics that will be streamed.')
-@allowed([
-  'AllMetrics'
-])
-param diagnosticMetricsToEnable array = [
-  'AllMetrics'
-]
-
-@description('Optional. The name of the diagnostic setting, if deployed. If left empty, it defaults to "<resourceName>-diagnosticSettings".')
-param diagnosticSettingsName string = ''
-
-var diagnosticsLogsSpecified = [for category in filter(diagnosticLogCategoriesToEnable, item => item != 'allLogs' && item != ''): {
-  category: category
-  enabled: true
-  retentionPolicy: {
-    enabled: true
-    days: diagnosticLogsRetentionInDays
-  }
-}]
-
-var diagnosticsLogs = contains(diagnosticLogCategoriesToEnable, 'allLogs') ? [
+var endpointObject = [
   {
-    categoryGroup: 'allLogs'
-    enabled: true
-    retentionPolicy: {
-      enabled: true
-      days: diagnosticLogsRetentionInDays
+    name: endpointName[0]
+    type: 'Microsoft.Network/trafficmanagerprofiles/azureEndpoints'
+    properties: {
+      target: endpointfqdn[0]
+      targetResourceId: endpointID[0]
+      endpointStatus: 'Enabled'
+      weight: 1
+      priority: 1
+      endpointLocation: location[0]
     }
   }
-] : contains(diagnosticLogCategoriesToEnable, '') ? [] : diagnosticsLogsSpecified
-
-var diagnosticsMetrics = [for metric in diagnosticMetricsToEnable: {
-  category: metric
-  timeGrain: null
-  enabled: true
-  retentionPolicy: {
-    enabled: true
-    days: diagnosticLogsRetentionInDays
-  }
-}]
-
-resource defaultTelemetry 'Microsoft.Resources/deployments@2021-04-01' = if (enableDefaultTelemetry) {
-  name: 'pid-47ed15a6-730a-4827-bcb4-0fd963ffbd82-${uniqueString(deployment().name)}'
-  properties: {
-    mode: 'Incremental'
-    template: {
-      '$schema': 'https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#'
-      contentVersion: '1.0.0.0'
-      resources: []
+  {
+    name: endpointName[1]
+    type: 'Microsoft.Network/trafficmanagerprofiles/azureEndpoints'
+    properties: {
+      target: endpointfqdn[1]
+      targetResourceId: endpointID[1]
+      endpointStatus: 'Enabled'
+      weight: 5
+      priority: 10
+      endpointLocation: location[1]
     }
   }
-}
+]
+
+
 
 resource trafficManagerProfile 'Microsoft.Network/trafficmanagerprofiles@2018-08-01' = {
-  name: name
-  tags: tags
+  name: tmName
   location: 'global'
   properties: {
     profileStatus: profileStatus
@@ -156,30 +93,9 @@ resource trafficManagerProfile 'Microsoft.Network/trafficmanagerprofiles@2018-08
       ttl: ttl
     }
     monitorConfig: monitorConfig
-    endpoints: endpoints
+    endpoints: endpointObject
+
     trafficViewEnrollmentStatus: trafficViewEnrollmentStatus
     maxReturn: maxReturn
   }
-}
-
-resource trafficManagerProfile_lock 'Microsoft.Authorization/locks@2020-05-01' = if (!empty(lock)) {
-  name: '${trafficManagerProfile.name}-${lock}-lock'
-  properties: {
-    level: any(lock)
-    notes: lock == 'CanNotDelete' ? 'Cannot delete resource or child resources.' : 'Cannot modify the resource or child resources.'
-  }
-  scope: trafficManagerProfile
-}
-
-resource trafficManagerProfile_diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (!empty(diagnosticStorageAccountId) || !empty(diagnosticWorkspaceId) || !empty(diagnosticEventHubAuthorizationRuleId) || !empty(diagnosticEventHubName)) {
-  name: !empty(diagnosticSettingsName) ? diagnosticSettingsName : '${name}-diagnosticSettings'
-  properties: {
-    storageAccountId: !empty(diagnosticStorageAccountId) ? diagnosticStorageAccountId : null
-    workspaceId: !empty(diagnosticWorkspaceId) ? diagnosticWorkspaceId : null
-    eventHubAuthorizationRuleId: !empty(diagnosticEventHubAuthorizationRuleId) ? diagnosticEventHubAuthorizationRuleId : null
-    eventHubName: !empty(diagnosticEventHubName) ? diagnosticEventHubName : null
-    metrics: diagnosticsMetrics
-    logs: diagnosticsLogs
-  }
-  scope: trafficManagerProfile
 }

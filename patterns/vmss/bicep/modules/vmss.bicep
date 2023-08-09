@@ -1,7 +1,7 @@
 @description('The Azure region you wish to deploy the VMSS instance into. It must support AZs.')
 param location string
 
-@description('The IP address range for Hub Network.')
+@description('The Azure Resource name that your VMSS Instance will have.')
 param vmssName string
 
 @description('The name prefix for the VMSS Virtual Machines, not the VMSS Instance.')
@@ -10,35 +10,37 @@ param vmNamePrefix string
 @description('The name of the virtual network you wish to deploy the new VMSS instance into.')
 param vnetName string
 
-@description('The name of the subnet within the provided VNET that you wish to deploy the new VMSS instance into..')
+@description('The name of the subnet within the provided VNET that you wish to deploy the new VMSS instance into.')
 param subnetName string
 
 @description('The Instance count for VMSS.')
 param instanceCount int
 
-// Parameter for the VMSS Sku
-@description('The SKU for the VMSS Instance you wish to deploy')
+
+@description('The VM SKU for the VMSS Instance you wish to deploy')
 param vmSku string
 
-@description('Specify the Zones you wish to deploy into')
+@description('Specify the Availability Zones you wish to deploy into')
 param zones array
 
+@description('The type of OS you wish to use for the VMSS Instance.')
 @allowed([
   'ubuntulinux'
   'windowsserver'
 ])
 param os string
 
-@description('The local admin username')
+@description('The local admin username for the VMSS instance.')
 param adminUsername string
 
-@description('The admin password for the VMSS instance.')
+@description('The authentication type for the VMSS instance. This will be determined by the OS you choose.')
 @allowed([
   'password'
   'sshPublicKey'
 ])
 param authenticationType string
 
+@description('The admin password for the VMSS instance.')
 @secure()
 param adminPasswordOrKey string
 
@@ -166,6 +168,9 @@ resource publicIp 'Microsoft.Network/publicIPAddresses@2023-02-01' = {
   properties: {
     publicIPAllocationMethod: 'Static'
     publicIPAddressVersion: 'IPv4'
+    dnsSettings: {
+      domainNameLabel: '${vmssName}-pip'
+    }
   }
 }
 
@@ -225,3 +230,6 @@ resource loadBalancer 'Microsoft.Network/loadBalancers@2023-02-01' = {
     ]
   }
 }
+
+output publicIpID string = publicIp.id
+output publicIpFQDN string = publicIp.properties.dnsSettings.fqdn
