@@ -15,12 +15,12 @@ var appServiceSpec = [
   {
     name: 's2-api-${uniqueString(subscription().id)}'
     kind: 'api'
-    serverFarmName: 's2-apiasp-${uniqueString(subscription().id)}'
+    farmName: 's2-apiasp-${uniqueString(subscription().id)}'
   }
   {
     name: 's2-web-${uniqueString(subscription().id)}'
     kind: 'app'
-    serverFarmname: 's2-webasp-${uniqueString(subscription().id)}'
+    farmName: 's2-webasp-${uniqueString(subscription().id)}'
   }
 ]
 var vnetAddressPrefix = [
@@ -40,6 +40,46 @@ var subnetSpec = [
     name: 'dataSubnet'
   }
 ]
+module serverFarm 'br/public:avm/res/web/serverfarm:0.1.1' =  [for farm in appServiceSpec:{
+  name: 'webASPDeploy-${farm.farmName}'
+  scope: resourceGroup
+  params: {
+    name: farm.farmName
+    location: location
+    sku: {
+      capacity: 1
+      family: 'S'
+      name: 'S1'
+      size: 'S1'
+      tier: 'Standard'
+    }
+  }
+}
+]
+
+module appServices 'br/public:avm/res/web/site:0.3.6' = [for (app, i) in appServiceSpec: {
+  name: 'appDeploy-${app.name}'
+  scope: resourceGroup
+  params: {
+    kind: app.kind
+    location: location
+    name: app.name
+    serverFarmResourceId: serverFarm[i].outputs.resourceId
+    privateEndpoints: [
+      {
+        privateDnsZoneResourceIds: [
+          webPrivateDnsZone.outputs.resourceId
+        ]
+        subnetResourceId: virtualNetwork.outputs.subnetResourceIds[1]
+        tags: {
+          Environment: 'lab'
+        }
+      }
+    ]
+  }
+}]
+
+
 
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
   name: rgName
@@ -69,21 +109,7 @@ module webPrivateDnsZone 'br/public:avm/res/network/private-dns-zone:0.3.0' = {
     location: 'global'
   }
 }
-
-module webLayer 'layers/web.bicep' = [for app in appServiceSpec: {
-  scope: resourceGroup
-  name: 'WebLayerDeployment.${app.name}'
-  params: {
-    appServiceKind: app.kind
-    appServiceName: app.name
-    aspName: app.serverFarmName
-    location: location
-    privateDNSZoneId: webPrivateDnsZone.outputs.resourceId
-    subnetId: virtualNetwork.outputs.subnetResourceIds[1]
-  }
-}
-]
-
+ 
 module sqlServer 'br/public:avm/res/sql/server:0.4.0' = {
   name: 'sqlServerDeployment'
   scope: resourceGroup
@@ -110,4 +136,4 @@ module sqlServer 'br/public:avm/res/sql/server:0.4.0' = {
     ]
     location: location
   }
-}
+} 
