@@ -8,19 +8,21 @@ param location string = 'australiaeast'
 @secure()
 param sqlpassword string
 
-var rgName = 'rg-waf-az-lab-scenario-two'
-var vnetName = 's2-vnet-${uniqueString(subscription().id)}'
-var sqlServerName = 's2-sql-${uniqueString(subscription().id)}'
+var rgName = 'r-waf-az-lab-scenario'
+var vnetName = 'r-vnet-${uniqueString(subscription().id)}'
+var apimName = 'r-apim-${uniqueString(subscription().id)}'
+var appGWName = 'r-appgw-${uniqueString(subscription().id)}'
+var sqlServerName = 'r-sql-${uniqueString(subscription().id)}'
 var appServiceSpec = [
   {
-    name: 's2-api-${uniqueString(subscription().id)}'
+    name: 'r-api-${uniqueString(subscription().id)}'
     kind: 'api'
-    farmName: 's2-apiasp-${uniqueString(subscription().id)}'
+    farmName: 'r-apiasp-${uniqueString(subscription().id)}'
   }
   {
-    name: 's2-web-${uniqueString(subscription().id)}'
+    name: 'r-web-${uniqueString(subscription().id)}'
     kind: 'app'
-    farmName: 's2-webasp-${uniqueString(subscription().id)}'
+    farmName: 'r-webasp-${uniqueString(subscription().id)}'
   }
 ]
 var vnetAddressPrefix = [
@@ -40,8 +42,30 @@ var subnetSpec = [
     name: 'dataSubnet'
   }
 ]
+
+
+resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
+  name: rgName
+  location: location
+}
+
+module virtualNetwork 'br/public:avm/res/network/virtual-network:0.1.6' = {
+  name: 'vnetDeployment1'
+  scope: resourceGroup
+  params: {
+    name: vnetName
+    addressPrefixes: vnetAddressPrefix
+    subnets: [
+      for subnet in subnetSpec: {
+        name: subnet.name
+        addressPrefix: subnet.addressPrefix
+      }      
+    ]
+  }
+}
+
 module serverFarm 'br/public:avm/res/web/serverfarm:0.1.1' =  [for farm in appServiceSpec:{
-  name: 'webASPDeploy-${farm.farmName}'
+  name: 'webASPDeploy-${farm.farmName}1'
   scope: resourceGroup
   params: {
     name: farm.farmName
@@ -58,7 +82,7 @@ module serverFarm 'br/public:avm/res/web/serverfarm:0.1.1' =  [for farm in appSe
 ]
 
 module appServices 'br/public:avm/res/web/site:0.3.6' = [for (app, i) in appServiceSpec: {
-  name: 'appDeploy-${app.name}'
+  name: 'appDeploy-${app.name}1'
   scope: resourceGroup
   params: {
     kind: app.kind
@@ -79,39 +103,24 @@ module appServices 'br/public:avm/res/web/site:0.3.6' = [for (app, i) in appServ
   }
 }]
 
-
-
-resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
-  name: rgName
-  location: location
-}
-
-module virtualNetwork 'br/public:avm/res/network/virtual-network:0.1.6' = {
-  name: 'vnetDeployment'
-  scope: resourceGroup
-  params: {
-    name: vnetName
-    addressPrefixes: vnetAddressPrefix
-    subnets: [
-      for subnet in subnetSpec: {
-        name: subnet.name
-        addressPrefix: subnet.addressPrefix
-      }      
-    ]
-  }
-}
-
 module webPrivateDnsZone 'br/public:avm/res/network/private-dns-zone:0.3.0' = {
-  name: 'apiPrivateDnsZoneDeployment'
+  name: 'apiPrivateDnsZoneDeployment1'
   scope: resourceGroup
   params: {
     name: 'privatelink.azurewebsites.net'
     location: 'global'
+    virtualNetworkLinks: [
+      {
+        name: 'webVnetLink'
+        registrationEnabled: true
+        virtualNetworkResourceId: virtualNetwork.outputs.resourceId
+      }
+    ]
   }
 }
  
 module sqlServer 'br/public:avm/res/sql/server:0.4.0' = {
-  name: 'sqlServerDeployment'
+  name: 'sqlServerDeployment1'
   scope: resourceGroup
   params: {
     // Required parameters
@@ -136,4 +145,27 @@ module sqlServer 'br/public:avm/res/sql/server:0.4.0' = {
     ]
     location: location
   }
-} 
+}
+
+
+
+/* module apim 'layers/apim.bicep' = {
+  scope: resourceGroup
+  name: 'apimDeployment-s2'
+  params: {
+    apimName: apimName
+    location: location
+  }
+}
+ */
+module appGW 'layers/appgw.bicep' = {
+  scope: resourceGroup
+  name: 'appGW1'
+  params: {
+    appGWName: appGWName
+    appGWSubnetId: virtualNetwork.outputs.subnetResourceIds[0]
+    bePoolName: 'web-be-pool'
+    beSiteFqdn: appServices[1].outputs.defaultHostname
+    location: location
+  }
+}
