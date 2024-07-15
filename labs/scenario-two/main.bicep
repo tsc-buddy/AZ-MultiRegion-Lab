@@ -26,7 +26,7 @@ targetScope = 'subscription'
   'westeurope'
   'francecentral'
   'germanywestcentral'
-  'italynorth'q
+  'italynorth'
   'norwayeast'
   'polandcentral'
   'spaincentral'
