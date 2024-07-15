@@ -15,6 +15,8 @@ resource publicIPAddress 'Microsoft.Network/publicIPAddresses@2023-09-01' = {
   }
   zones: [
     '1'
+    '2'
+    '3'
   ]
   properties: {
     publicIPAddressVersion: 'IPv4'
@@ -30,6 +32,8 @@ module appGW 'br/public:avm/res/network/application-gateway:0.1.0' = {
       name: appGWName
       zones: [
         '1'
+        '2'
+        '3'
       ]
       backendAddressPools: [
         {

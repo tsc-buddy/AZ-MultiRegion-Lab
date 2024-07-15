@@ -2,27 +2,60 @@ metadata name = 'Scenario Two'
 metadata description = 'This bicep codes deploys application infrastructure for scenario two, a web based paas application with a database backend.'
 targetScope = 'subscription'
 
-@description('The Azure region you wish to deploy to.')
+
+@allowed([
+  'eastus'
+  'eastus2'
+  'southcentralus'
+  'westus2'
+  'westus3'
+  'centralus'
+  'mexicocentral'
+  'brazilsouth'
+  'canadacentral'
+  'australiaeast'
+  'southeastasia'
+  'centralindia'
+  'eastasia' 
+  'japaneast'
+  'koreacentral'
+  'southafricanorth'
+  'northeurope'
+  'swedencentral'
+  'uksouth'              
+  'westeurope'
+  'francecentral'
+  'germanywestcentral'
+  'italynorth'q
+  'norwayeast'
+  'polandcentral'
+  'spaincentral'
+  'switzerlandnorth'
+  'uaenorth'
+  'israelcentral'
+  'qatarcentral'
+])
+@description('The Azure region you wish to deploy to. It must support availability zones.')
 param location string = 'australiaeast'
 
 @secure()
 param sqlpassword string
 
-var rgName = 'r-waf-az-lab-scenario'
-var vnetName = 'r-vnet-${uniqueString(subscription().id)}'
-var apimName = 'r-apim-${uniqueString(subscription().id)}'
-var appGWName = 'r-appgw-${uniqueString(subscription().id)}'
-var sqlServerName = 'r-sql-${uniqueString(subscription().id)}'
+var rgName = 'rg-waf-az-lab-scenario'
+var vnetName = 's2-vnet-${uniqueString(subscription().id)}'
+var apimName = 's2-apim-${uniqueString(subscription().id)}'
+var appGWName = 's2-appgw-${uniqueString(subscription().id)}'
+var sqlServerName = 's2-sql-${uniqueString(subscription().id)}'
 var appServiceSpec = [
   {
-    name: 'r-api-${uniqueString(subscription().id)}'
+    name: 's2-api-${uniqueString(subscription().id)}'
     kind: 'api'
-    farmName: 'r-apiasp-${uniqueString(subscription().id)}'
+    farmName: 's2-apiasp-${uniqueString(subscription().id)}'
   }
   {
-    name: 'r-web-${uniqueString(subscription().id)}'
+    name: 's2-web-${uniqueString(subscription().id)}'
     kind: 'app'
-    farmName: 'r-webasp-${uniqueString(subscription().id)}'
+    farmName: 's2-webasp-${uniqueString(subscription().id)}'
   }
 ]
 var vnetAddressPrefix = [
