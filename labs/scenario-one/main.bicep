@@ -38,48 +38,57 @@ targetScope = 'subscription'
 @description('The Azure region you wish to deploy to. It must support availability zones.')
 param location string = 'westus3'
 
-@secure()
-param sqlpassword string
 
 var rgName = 'rg-waf-az-lab-scenario-one'
 var vnetName = 's1-vnet-${uniqueString(subscription().id)}'
 var appGWName = 's1-appgw-${uniqueString(subscription().id)}'
-var frontEndTierSpec = [
+
+@secure()
+param localadminpw string
+
+var localadmin = 'azureadmin'
+
+var webTierSpec = [
   {
-    name: 's1-api-${uniqueString(subscription().id)}'
-    kind: 'api'
-    farmName: 's1-apiasp-${uniqueString(subscription().id)}'
+    name: 's1-webvm-1'
+    zone: '1'
   }
   {
-    name: 's1-web-${uniqueString(subscription().id)}'
-    kind: 'app'
-    farmName: 's1-webasp-${uniqueString(subscription().id)}'
-  }
+    name: 's1-webvm-2'
+    zone: '2'
+}  
+{
+    name: 's1-webvm-3'
+    zone: '3'
+}
 ]
 var appTierSpec = [
   {
-    name: 's1-api-${uniqueString(subscription().id)}'
-    kind: 'api'
-    farmName: 's1-apiasp-${uniqueString(subscription().id)}'
+    name: 's1-appvm-1'
+    zone: '1'
   }
   {
-    name: 's1-web-${uniqueString(subscription().id)}'
-    kind: 'app'
-    farmName: 's1-webasp-${uniqueString(subscription().id)}'
-  }
+    name: 's1-appvm-2'
+    zone: '2'
+}  
+{
+    name: 's1-appvm-3'
+    zone: '3'
+}
 ]
-
 var dataTierSpec = [
   {
-    name: 's1-api-${uniqueString(subscription().id)}'
-    kind: 'api'
-    farmName: 's1-apiasp-${uniqueString(subscription().id)}'
+    name: 's1-sqlvm-1'
+    zone: '1'
   }
   {
-    name: 's1-web-${uniqueString(subscription().id)}'
-    kind: 'app'
-    farmName: 's1-webasp-${uniqueString(subscription().id)}'
-  }
+    name: 's1-sqlvm-2'
+    zone: '2'
+}  
+{
+    name: 's1-sqlvm-3'
+    zone: '3'
+}
 ]
 
 var vnetAddressPrefix = [
@@ -125,24 +134,26 @@ module virtualNetwork 'br/public:avm/res/network/virtual-network:0.1.6' = {
   }
 }
 
-module virtualMachine 'br/public:avm/res/compute/virtual-machine:<version>' = {
-  name: 'virtualMachineDeployment'
+
+module webvirtualMachine 'br/public:avm/res/compute/virtual-machine:0.5.3' = [for webserver in webTierSpec: {
+  name: webserver.name
   params: {
     // Required parameters
-    adminUsername: 'localAdminUser'
+    adminUsername: localadmin
+    availabiltyZone: webserver.zone
     imageReference: {
       offer: 'WindowsServer'
       publisher: 'MicrosoftWindowsServer'
       sku: '2022-datacenter-azure-edition'
       version: 'latest'
     }
-    name: 'cvmwinmin'
+    name: webserver.name
     nicConfigurations: [
       {
         ipConfigurations: [
           {
             name: 'ipconfig01'
-            subnetResourceId: ''
+            subnetResourceId: subnet.id
           }
         ]
         nicSuffix: '-nic-01'
@@ -157,90 +168,51 @@ module virtualMachine 'br/public:avm/res/compute/virtual-machine:<version>' = {
     }
     osType: 'Windows'
     vmSize: 'Standard_DS2_v2'
-    zone: 0
-    // Non-required parameters
-    adminPassword: 'davenewadmin'
-    location: 'wetus3'
+  } 
   }
-}
+]
 
-module appServices 'br/public:avm/res/web/site:0.3.6' = [for (app, i) in appServiceSpec: {
-  name: 'appDeploy-${app.name}1'
-  scope: resourceGroup
-  params: {
-    kind: app.kind
-    location: location
-    name: app.name
-    serverFarmResourceId: serverFarm[i].outputs.resourceId
-    privateEndpoints: [
-      {
-        privateDnsZoneResourceIds: [
-          webPrivateDnsZone.outputs.resourceId
-        ]
-        subnetResourceId: virtualNetwork.outputs.subnetResourceIds[1]
-        tags: {
-          Environment: 'lab'
-        }
-      }
-    ]
-  }
-}]
-
-module webPrivateDnsZone 'br/public:avm/res/network/private-dns-zone:0.3.0' = {
-  name: 'apiPrivateDnsZoneDeployment1'
-  scope: resourceGroup
-  params: {
-    name: 'privatelink.azurewebsites.net'
-    location: 'global'
-    virtualNetworkLinks: [
-      {
-        name: 'webVnetLink'
-        registrationEnabled: true
-        virtualNetworkResourceId: virtualNetwork.outputs.resourceId
-      }
-    ]
-  }
-}
- 
-module sqlServer 'br/public:avm/res/sql/server:0.4.0' = {
-  name: 'sqlServerDeployment1'
-  scope: resourceGroup
+module virtualMachine 'br/public:avm/res/compute/virtual-machine:0.2.3' = [for vm in vmSpec: {
+  name: vm.name
   params: {
     // Required parameters
-    name: sqlServerName
-    // Non-required parameters
-    administratorLogin: 'sqladmin'
-    administratorLoginPassword: sqlpassword
-    databases: [
+    adminUsername: adminUsername
+    encryptionAtHost: false
+    availabilityZone: vm.az
+    imageReference: {
+      offer: 'WindowsServer'
+      publisher: 'MicrosoftWindowsServer'
+      sku: '2022-datacenter-azure-edition'
+      version: 'latest'
+    }
+    name: vm.name
+    nicConfigurations: [
       {
-        name: 'azlabdb'
-        maxSizeBytes: 2147483648
-        skuName: 'Standard'
-        skuTier: 'Standard'
-      }
-      {
-        name: 'appdb'
-        maxSizeBytes: 2147483648
-        skuName: 'Standard'
-        skuTier: 'Standard'
-
+        ipConfigurations: [
+          {
+            name: 'ipconfig01'
+            subnetResourceId: vnet1.properties.subnets[0].id
+          }
+        ]
+        nicSuffix: 'nic-${vm.name}'
       }
     ]
+    osDisk: {
+      caching: 'ReadWrite'
+      diskSizeGB: 128
+      managedDisk: {
+        storageAccountType: 'Premium_LRS'
+      }
+    }
+    osType: 'Windows'
+    vmSize: vm.vmSize
+    // Non-required parameters
+    adminPassword: adminPassword
     location: location
   }
 }
+]
 
-
-
-/* module apim 'layers/apim.bicep' = {
-  scope: resourceGroup
-  name: 'apimDeployment-s1'
-  params: {
-    apimName: apimName
-    location: location
-  }
-}
- */
 module appGW 'layers/appgw.bicep' = {
   scope: resourceGroup
   name: 'appGW1'
