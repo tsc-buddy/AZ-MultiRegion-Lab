@@ -7,10 +7,21 @@ param location string = 'australiaeast'
 
 @secure()
 param sqlpassword string
+/* 
+@description('The SKU Name for APIM')
+param apimSku string = 'Developer'
+
+@description('The SKU instances for APIM')
+param apimSkuCount int */
+
+////////////////
+// Variables ///
+////////////////
 
 var rgName = 'rg-waf-az-lab-scenario-two'
 var vnetName = 's2-vnet-${uniqueString(subscription().id)}'
 var sqlServerName = 's2-sql-${uniqueString(subscription().id)}'
+var apimName = 's2-apim-${uniqueString(subscription().id)}'
 var appServiceSpec = [
   {
     name: 's2-api-${uniqueString(subscription().id)}'
@@ -29,18 +40,56 @@ var vnetAddressPrefix = [
 var subnetSpec = [
   {
     name: 'appGatewaySubnet'
-    addressPrefix: '192.168.3.0/24'
+    addressPrefix: '192.168.0.0/24'
   }
   {
-    addressPrefix: '192.168.1.0/25'
+    addressPrefix: '192.168.1.0/24'
     name: 'webSubnet'
   }
   {
-    addressPrefix: '192.168.0.0/24'
+    addressPrefix: '192.168.2.0/24'
     name: 'dataSubnet'
   }
+  {
+    addressPrefix: '192.168.3.0/24'
+    name: 'APIMSubnet'
+  }
 ]
-module serverFarm 'br/public:avm/res/web/serverfarm:0.1.1' =  [for farm in appServiceSpec:{
+
+////////////////
+// Resources ///
+////////////////
+
+resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
+  name: rgName
+  location: location
+}
+
+module virtualNetwork 'br/public:avm/res/network/virtual-network:0.1.6' = {
+  name: 'vnetDeployment'
+  scope: resourceGroup
+  params: {
+    name: vnetName
+    addressPrefixes: vnetAddressPrefix
+    subnets: [
+      for subnet in subnetSpec: {
+        name: subnet.name
+        addressPrefix: subnet.addressPrefix
+      }      
+    ]
+  }
+}
+
+module webPrivateDnsZone 'br/public:avm/res/network/private-dns-zone:0.3.0' = {
+  name: 'apiPrivateDnsZoneDeployment'
+  scope: resourceGroup
+  params: {
+    name: 'privatelink.azurewebsites.net'
+    location: 'global'
+  }
+}
+
+module serverFarm 'br/public:avm/res/web/serverfarm:0.1.1' = [for farm in appServiceSpec:{
   name: 'webASPDeploy-${farm.farmName}'
   scope: resourceGroup
   params: {
@@ -78,37 +127,6 @@ module appServices 'br/public:avm/res/web/site:0.3.6' = [for (app, i) in appServ
     ]
   }
 }]
-
-
-
-resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
-  name: rgName
-  location: location
-}
-
-module virtualNetwork 'br/public:avm/res/network/virtual-network:0.1.6' = {
-  name: 'vnetDeployment'
-  scope: resourceGroup
-  params: {
-    name: vnetName
-    addressPrefixes: vnetAddressPrefix
-    subnets: [
-      for subnet in subnetSpec: {
-        name: subnet.name
-        addressPrefix: subnet.addressPrefix
-      }      
-    ]
-  }
-}
-
-module webPrivateDnsZone 'br/public:avm/res/network/private-dns-zone:0.3.0' = {
-  name: 'apiPrivateDnsZoneDeployment'
-  scope: resourceGroup
-  params: {
-    name: 'privatelink.azurewebsites.net'
-    location: 'global'
-  }
-}
  
 module sqlServer 'br/public:avm/res/sql/server:0.4.0' = {
   name: 'sqlServerDeployment'
@@ -136,4 +154,31 @@ module sqlServer 'br/public:avm/res/sql/server:0.4.0' = {
     ]
     location: location
   }
-} 
+}
+
+/* module apimInstance 'layers/apim.bicep' = {
+  scope: resourceGroup
+  name: 'apimDeployment'
+  params: {
+    apimName: apimName
+    location: location
+    subnetId: virtualNetwork.outputs.subnetResourceIds[3]
+    apimSku: apimSku
+    apimSkuCount: apimSkuCount
+  }
+}  */
+
+
+module sf2 'br/public:avm/res/web/serverfarm:0.2.0' = {
+  scope: resourceGroup
+  name: 'v2serverfarm'
+  params: {
+    name: 'v2serverfarm'
+    skuCapacity: 1
+    skuName: 'S1'
+  }
+}
+
+///////////////
+/// Outputs ///
+///////////////
