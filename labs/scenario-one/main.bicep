@@ -4,11 +4,14 @@ targetScope = 'subscription'
 
 param location string = 'eastus2'
 
-var rgName = 'rg-waf-az-lab-scenario-1'
+var rgName1 = 'rg-waf-az-lab-scenario-1-core'
+var rgName2 = 'rg-waf-az-lab-scenario-1-web'
+var rgName3 = 'rg-waf-az-lab-scenario-1-app'
+var rgname4 = 'rg-waf-az-lab-scenario-1-data'
 var vnetName = 'SpokeVNet01'
 var appGWName = 's1-appgw-${uniqueString(subscription().id)}'
 var vnet2Name = 'coreVNet'
-var firewallName = 's1-fw-${uniqueString(subscription().id)}'
+var ilbName = 's1-ilb-${uniqueString(subscription().id)}'
 var ergatewayname = 's1-ergw-${uniqueString(subscription().id)}'
 
 @secure()
@@ -68,29 +71,44 @@ var subnetSpec = [
     addressPrefix: '172.16.3.0/24'
   }
   {
-    addressPrefix: '172.16.1.0/25'
     name: 'frontEndSubnet'
+    addressPrefix: '172.16.1.0/25'
   }
   {
-    addressPrefix: '172.16.2.0/25'
     name: 'appTierSubnet'
+    addressPrefix: '172.16.2.0/25'
   }
   {
+    name: 'dataSubnet'    
     addressPrefix: '172.16.0.0/24'
-    name: 'dataSubnet'
+
   }
 ]
 
 
-resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
-  name: rgName
+resource resourceGroup1 'Microsoft.Resources/resourceGroups@2021-04-01' = {
+  name: rgName1
+  location: location
+}
+
+resource resourceGroup2 'Microsoft.Resources/resourceGroups@2021-04-01' = {
+  name: rgName2
+  location: location
+}
+
+resource resourceGroup3 'Microsoft.Resources/resourceGroups@2021-04-01' = {
+  name: rgName3
+  location: location
+}
+resource resourceGroup4 'Microsoft.Resources/resourceGroups@2021-04-01' = {
+  name: rgname4
   location: location
 }
 
 //Spoke Network configuration
 module virtualNetwork 'br/public:avm/res/network/virtual-network:0.1.6' = {
   name: vnetName
-  scope: resourceGroup
+  scope: resourceGroup1
   params: {
     name: vnetName
     addressPrefixes: vnetAddressPrefix
@@ -106,7 +124,7 @@ module virtualNetwork 'br/public:avm/res/network/virtual-network:0.1.6' = {
 //VMs for Web Tier
 module webvirtualMachine 'br/public:avm/res/compute/virtual-machine:0.5.3' = [for webserver in webTierSpec: {
   name: webserver.name
-  scope: resourceGroup
+  scope: resourceGroup2
   params: {
     // Required parameters
     adminUsername: localadmin
@@ -150,7 +168,7 @@ module webvirtualMachine 'br/public:avm/res/compute/virtual-machine:0.5.3' = [fo
 
 //VMs for App Tier
 module virtualMachine 'br/public:avm/res/compute/virtual-machine:0.5.3' = [for app in appTierSpec: {
-  scope: resourceGroup
+  scope: resourceGroup3
   name: app.name
   params: {
     // Required parameters
@@ -192,9 +210,77 @@ module virtualMachine 'br/public:avm/res/compute/virtual-machine:0.5.3' = [for a
   }
 ]
 
+// ILB for app tier
+module loadBalancer 'br/public:avm/res/network/load-balancer:0.2.2' = {
+  scope: resourceGroup3
+  name: 'loadBalancerDeployment'
+  params: {
+    // Required parameters
+    frontendIPConfigurations: [
+      {
+        name: 'privateIPConfig1'
+        subnetId: virtualNetwork.outputs.subnetResourceIds[2]
+      }
+    ]
+    name: ilbName
+    // Non-required parameters
+    backendAddressPools: [
+      {
+        name: 'servers'
+      }
+    ]
+    inboundNatRules: [
+      {
+        backendPort: 443
+        enableFloatingIP: false
+        enableTcpReset: false
+        frontendIPConfigurationName: 'privateIPConfig1'
+        frontendPort: 443
+        idleTimeoutInMinutes: 4
+        name: 'inboundNatRule1'
+        protocol: 'Tcp'
+      }
+      {
+        backendPort: 3389
+        frontendIPConfigurationName: 'privateIPConfig1'
+        frontendPort: 3389
+        name: 'inboundNatRule2'
+      }
+    ]
+    loadBalancingRules: [
+      {
+        backendAddressPoolName: 'servers'
+        backendPort: 0
+        disableOutboundSnat: true
+        enableFloatingIP: true
+        enableTcpReset: false
+        frontendIPConfigurationName: 'privateIPConfig1'
+        frontendPort: 0
+        idleTimeoutInMinutes: 4
+        loadDistribution: 'Default'
+        name: 'privateIPLBRule1'
+        probeName: 'probe1'
+        protocol: 'All'
+      }
+    ]
+    location: location
+    probes: [
+      {
+        intervalInSeconds: 5
+        name: 'probe1'
+        numberOfProbes: 2
+        port: '62000'
+        protocol: 'Tcp'
+      }
+    ]
+    skuName: 'Standard'
+    }
+}
+
+
 //VMs for Data Tier
 module sqlvirtualMachine 'br/public:avm/res/compute/virtual-machine:0.5.3' = [for sql in dataTierSpec: {
-  scope: resourceGroup
+  scope: resourceGroup4
   name: sql.name
   params: {
     // Required parameters
@@ -237,7 +323,7 @@ module sqlvirtualMachine 'br/public:avm/res/compute/virtual-machine:0.5.3' = [fo
 ]
 
 module appGW1 'layers/appgw.bicep' = {
-  scope: resourceGroup
+  scope: resourceGroup2
   name: 'appGW1'
   params: {
     appGWName: appGWName
@@ -270,7 +356,7 @@ var coresubnetSpec = [
 
 module coreVirtualNetwork 'br/public:avm/res/network/virtual-network:0.1.6' = {
   name: vnet2Name
-  scope: resourceGroup
+  scope: resourceGroup1
   params: {
     name: vnet2Name
     addressPrefixes: corevnetAddressPrefix
@@ -285,10 +371,10 @@ module coreVirtualNetwork 'br/public:avm/res/network/virtual-network:0.1.6' = {
 
 //create Key Vault
 module kvcreate 'layers/kvcreate.bicep' = {
-  scope: resourceGroup
+  scope: resourceGroup2
   name : 'keyvault'
   params: {
-    location: resourceGroup.location
+    location: resourceGroup2.location
     adminPassword: localadminpw
   }
 
@@ -310,7 +396,7 @@ module kvcreate 'layers/kvcreate.bicep' = {
 
 // gateway create
 module virtualNetworkGateway 'br/public:avm/res/network/virtual-network-gateway:0.1.4' = {
-  scope: resourceGroup
+  scope: resourceGroup1
   name: 'virtualNetworkGatewayDeployment'
   params: {
     // Required parameters
@@ -319,6 +405,6 @@ module virtualNetworkGateway 'br/public:avm/res/network/virtual-network-gateway:
     skuName: 'Standard'
     vNetResourceId: coreVirtualNetwork.outputs.resourceId
     // Non-required parameters
-    location: resourceGroup.location
+    location: resourceGroup1.location
   }
 }
