@@ -2,14 +2,14 @@ metadata name = 'Scenario One'
 metadata description = 'This bicep codes deploys application infrastructure for scenario one, a web based IaaS application with a database backend.'
 targetScope = 'subscription'
 
-param location string = 'westus'
+param location string = 'eastus2'
 
-
-var rgName = 'rg-waf-az-lab-scenario-one'
+var rgName = 'rg-waf-az-lab-scenario-1'
 var vnetName = 'SpokeVNet01'
 var appGWName = 's1-appgw-${uniqueString(subscription().id)}'
-
 var vnet2Name = 'coreVNet'
+var firewallName = 's1-fw-${uniqueString(subscription().id)}'
+var ergatewayname = 's1-ergw-${uniqueString(subscription().id)}'
 
 @secure()
 param localadminpw string
@@ -19,43 +19,43 @@ var localadmin = 'azureadmin'
 var webTierSpec = [
   {
     name: 'webServ01'
-    zone: 1
+    zone: 0
   }
   {
     name: 'webServ02'
-    zone: 2
+    zone: 0
   }  
   {
     name: 'webServ03'
-    zone: 3
+    zone: 0
   }
 ]
 var appTierSpec = [
   {
     name: 'appServ01'
-    zone: 1
+    zone: 0
   }
   {
     name: 'appServ02'
-    zone: 2
+    zone: 0
   }   
   {
     name: 'appServ03'
-    zone: 3
+    zone: 0
   }
 ]
 var dataTierSpec = [
   {
     name: 'sqlServ01'
-    zone: 1
+    zone: 0
   }
   {
     name: 'sqlServ02'
-    zone: 2
+    zone: 0
   }  
   {
     name: 'sqlServ03'
-    zone: 3
+    zone: 0
   }
 ]
 
@@ -72,7 +72,7 @@ var subnetSpec = [
     name: 'frontEndSubnet'
   }
   {
-    addressPrefix: '172.16.1.0/25'
+    addressPrefix: '172.16.2.0/25'
     name: 'appTierSubnet'
   }
   {
@@ -98,7 +98,6 @@ module virtualNetwork 'br/public:avm/res/network/virtual-network:0.1.6' = {
       for subnet in subnetSpec: {
         name: subnet.name
         addressPrefix: subnet.addressPrefix
-        id: subnet.id
       }      
     ]
   }
@@ -124,7 +123,53 @@ module webvirtualMachine 'br/public:avm/res/compute/virtual-machine:0.5.3' = [fo
         ipConfigurations: [
           {
             name: 'ipconfig01'
-            subnetResourceId: virtualNetwork.outputs.subnetResourceIds[0].id
+            subnetResourceId: virtualNetwork.outputs.subnetResourceIds[1]
+          }
+        ]
+        nicSuffix: '-nic-01'
+      }
+    ]
+    encryptionAtHost: false
+    osDisk: {
+      caching: 'ReadWrite'
+      diskSizeGB: 128
+      managedDisk: {
+        storageAccountType: 'Standard_LRS'
+      }
+    }
+    osType: 'Windows'
+    vmSize: 'Standard_DS2_v2'
+    adminPassword: localadminpw
+  } 
+  
+  dependsOn: [
+    virtualNetwork
+  ]
+  }
+]
+
+//VMs for App Tier
+module virtualMachine 'br/public:avm/res/compute/virtual-machine:0.5.3' = [for app in appTierSpec: {
+  scope: resourceGroup
+  name: app.name
+  params: {
+    // Required parameters
+    adminUsername: localadmin
+    encryptionAtHost: false
+    zone: app.zone
+    imageReference: {
+      offer: 'WindowsServer'
+      publisher: 'MicrosoftWindowsServer'
+      sku: '2022-datacenter-azure-edition'
+      version: 'latest'
+    }
+    name: app.name
+    nicConfigurations: [
+      {
+        ipConfigurations: [
+          {
+            name: 'ipconfig01'
+            subnetResourceId: virtualNetwork.outputs.subnetResourceIds[2]
           }
         ]
         nicSuffix: '-nic-01'
@@ -141,61 +186,21 @@ module webvirtualMachine 'br/public:avm/res/compute/virtual-machine:0.5.3' = [fo
     vmSize: 'Standard_DS2_v2'
     adminPassword: localadminpw
   } 
+  dependsOn: [
+    virtualNetwork
+  ]
   }
-]
-
-//VMs for App Tier
-module virtualMachine 'br/public:avm/res/compute/virtual-machine:0.2.3' = [for app in appTierSpec: {
-  scope: resourceGroup
-  name: app.name
-  params: {
-    // Required parameters
-    adminUsername: localadmin
-    encryptionAtHost: false
-    availabilityZone: app.zone
-    imageReference: {
-      offer: 'WindowsServer'
-      publisher: 'MicrosoftWindowsServer'
-      sku: '2022-datacenter-azure-edition'
-      version: 'latest'
-    }
-    name: app.name
-    nicConfigurations: [
-      {
-        ipConfigurations: [
-          {
-            name: 'ipconfig01'
-            subnetResourceId: virtualNetwork.outputs.subnetResourceIds[1].id
-          }
-        ]
-        nicSuffix: 'nic-${app.name}'
-      }
-    ]
-    osDisk: {
-      caching: 'ReadWrite'
-      diskSizeGB: 128
-      managedDisk: {
-        storageAccountType: 'Premium_LRS'
-      }
-    }
-    osType: 'Windows'
-    vmSize: app.vmSize
-    // Non-required parameters
-    adminPassword: localadminpw
-    location: location
-  }
-}
 ]
 
 //VMs for Data Tier
-module sqlvirtualMachine 'br/public:avm/res/compute/virtual-machine:0.2.3' = [for sql in dataTierSpec: {
+module sqlvirtualMachine 'br/public:avm/res/compute/virtual-machine:0.5.3' = [for sql in dataTierSpec: {
   scope: resourceGroup
   name: sql.name
   params: {
     // Required parameters
     adminUsername: localadmin
     encryptionAtHost: false
-    availabilityZone: sql.zone
+    zone: sql.zone
     imageReference: {
       offer: 'WindowsServer'
       publisher: 'MicrosoftWindowsServer'
@@ -208,37 +213,37 @@ module sqlvirtualMachine 'br/public:avm/res/compute/virtual-machine:0.2.3' = [fo
         ipConfigurations: [
           {
             name: 'ipconfig01'
-            subnetResourceId: virtualNetwork.outputs.subnetResourceIds[2].id
+            subnetResourceId: virtualNetwork.outputs.subnetResourceIds[3]
           }
         ]
-        nicSuffix: 'nic-${sql.name}'
+        nicSuffix: '-nic-01'
       }
     ]
     osDisk: {
       caching: 'ReadWrite'
       diskSizeGB: 128
       managedDisk: {
-        storageAccountType: 'Premium_LRS'
+        storageAccountType: 'Standard_LRS'
       }
     }
     osType: 'Windows'
-    vmSize: sql.vmSize
-    // Non-required parameters
-    adminPassword: localadmin
-    location: location
+    vmSize: 'Standard_DS2_v2'
+    adminPassword: localadminpw
+  } 
+  dependsOn: [
+    virtualNetwork
+  ]
   }
-}
 ]
 
-
-module appGW 'layers/appgw.bicep' = {
+module appGW1 'layers/appgw.bicep' = {
   scope: resourceGroup
   name: 'appGW1'
   params: {
     appGWName: appGWName
     appGWSubnetId: virtualNetwork.outputs.subnetResourceIds[0]
     bePoolName: 'web-be-pool'
-    beSiteFqdn: ''
+    beSiteFqdn: '172.16.3.4'
     location: location
   }
 }
@@ -270,12 +275,50 @@ module coreVirtualNetwork 'br/public:avm/res/network/virtual-network:0.1.6' = {
     name: vnet2Name
     addressPrefixes: corevnetAddressPrefix
     subnets: [
-      for subnet in coresubnetSpec: {
-        name: subnet.name
-        addressPrefix: subnet.addressPrefix
-        id: subnet.id
+      for subnets in coresubnetSpec: {
+        name: subnets.name
+        addressPrefix: subnets.addressPrefix
       }      
     ]
   }
 }
 
+//create Key Vault
+module kvcreate 'layers/kvcreate.bicep' = {
+  scope: resourceGroup
+  name : 'keyvault'
+  params: {
+    location: resourceGroup.location
+    adminPassword: localadminpw
+  }
+
+}
+/*
+ //create Firewall
+ module azureFirewall 'br/public:avm/res/network/azure-firewall:0.3.2' = {
+  scope: resourceGroup
+  name: firewallName
+  params: {
+    // Required parameters
+    name: ''
+    // Non-required parameters
+    location: resourceGroup.location
+    virtualNetworkResourceId: coreVirtualNetwork.outputs.subnetResourceIds[2]
+  }
+}
+*/
+
+// gateway create
+module virtualNetworkGateway 'br/public:avm/res/network/virtual-network-gateway:0.1.4' = {
+  scope: resourceGroup
+  name: 'virtualNetworkGatewayDeployment'
+  params: {
+    // Required parameters
+    gatewayType: 'ExpressRoute'
+    name: ergatewayname
+    skuName: 'Standard'
+    vNetResourceId: coreVirtualNetwork.outputs.resourceId
+    // Non-required parameters
+    location: resourceGroup.location
+  }
+}

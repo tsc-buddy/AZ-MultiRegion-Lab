@@ -13,11 +13,7 @@ resource publicIPAddress 'Microsoft.Network/publicIPAddresses@2023-09-01' = {
   sku: {
     name: 'Standard'
   }
-  zones: [
-    '1'
-    '2'
-    '3'
-  ]
+  
   properties: {
     publicIPAddressVersion: 'IPv4'
     publicIPAllocationMethod: 'Static'
@@ -30,11 +26,6 @@ module appGW 'br/public:avm/res/network/application-gateway:0.1.0' = {
     params: {
       location: location
       name: appGWName
-      zones: [
-        '1'
-        '2'
-        '3'
-      ]
       backendAddressPools: [
         {
           name: bePoolName
