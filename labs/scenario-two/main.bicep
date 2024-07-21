@@ -46,6 +46,7 @@ var vnetName = 's2-vnet-${uniqueString(subscription().id)}'
 var apimName = 's2-apim-${uniqueString(subscription().id)}'
 var appGWName = 's2-appgw-${uniqueString(subscription().id)}'
 var sqlServerName = 's2-sql-${uniqueString(subscription().id)}'
+var storageAccountName = 's2sa${uniqueString(subscription().id)}'
 var appServiceSpec = [
   {
     name: 's2-api-${uniqueString(subscription().id)}'
@@ -177,6 +178,17 @@ module sqlServer 'br/public:avm/res/sql/server:0.4.0' = {
       }
     ]
     location: location
+  }
+}
+
+module storageAccount 'br/public:avm/res/storage/storage-account:0.9.1' = {
+  scope: resourceGroup
+  name: storageAccountName
+  params: {
+    name: storageAccountName
+    kind: 'StorageV2'
+    location: location
+    skuName: 'Standard_LRS'
   }
 }
 
