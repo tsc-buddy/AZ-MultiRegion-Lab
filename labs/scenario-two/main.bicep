@@ -41,7 +41,7 @@ param location string = 'australiaeast'
 @secure()
 param sqlpassword string
 
-var rgName = 'rg-waf-az-lab-scenario'
+var rgName = 'rg-waf-az-lab-scenario-2'
 var vnetName = 's2-vnet-${uniqueString(subscription().id)}'
 var apimName = 's2-apim-${uniqueString(subscription().id)}'
 var appGWName = 's2-appgw-${uniqueString(subscription().id)}'
@@ -180,8 +180,6 @@ module sqlServer 'br/public:avm/res/sql/server:0.4.0' = {
   }
 }
 
-
-
 /* module apim 'layers/apim.bicep' = {
   scope: resourceGroup
   name: 'apimDeployment-s2'
@@ -202,3 +200,4 @@ module appGW 'layers/appgw.bicep' = {
     location: location
   }
 }
+ 
