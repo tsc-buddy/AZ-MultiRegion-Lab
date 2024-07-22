@@ -203,14 +203,19 @@ module virtualMachine 'br/public:avm/res/compute/virtual-machine:0.5.3' = [for a
     osType: 'Windows'
     vmSize: 'Standard_DS2_v2'
     adminPassword: localadminpw
-  } 
-  dependsOn: [
+    tags:{
+      Environment: 'Production'
+      Role: 'AppServer'
+    }
+  }
+    dependsOn: [
     virtualNetwork
   ]
   }
 ]
 
 // ILB for app tier
+
 module loadBalancer 'br/public:avm/res/network/load-balancer:0.2.2' = {
   scope: resourceGroup3
   name: 'loadBalancerDeployment'
@@ -276,7 +281,6 @@ module loadBalancer 'br/public:avm/res/network/load-balancer:0.2.2' = {
     skuName: 'Standard'
     }
 }
-
 
 //VMs for Data Tier
 module sqlvirtualMachine 'br/public:avm/res/compute/virtual-machine:0.5.3' = [for sql in dataTierSpec: {
@@ -379,20 +383,6 @@ module kvcreate 'layers/kvcreate.bicep' = {
   }
 
 }
-/*
- //create Firewall
- module azureFirewall 'br/public:avm/res/network/azure-firewall:0.3.2' = {
-  scope: resourceGroup
-  name: firewallName
-  params: {
-    // Required parameters
-    name: ''
-    // Non-required parameters
-    location: resourceGroup.location
-    virtualNetworkResourceId: coreVirtualNetwork.outputs.subnetResourceIds[2]
-  }
-}
-*/
 
 // gateway create
 module virtualNetworkGateway 'br/public:avm/res/network/virtual-network-gateway:0.1.4' = {
@@ -408,3 +398,4 @@ module virtualNetworkGateway 'br/public:avm/res/network/virtual-network-gateway:
     location: resourceGroup1.location
   }
 }
+

@@ -1,6 +1,6 @@
 // Key Vault
 param location string = resourceGroup().location
-param keyVaultName string = 's1-kv-${uniqueString(subscription().id)}'
+param keyVaultName string = 's1-kv-1${uniqueString(subscription().id)}'
 
 @secure()
 param adminPassword string
