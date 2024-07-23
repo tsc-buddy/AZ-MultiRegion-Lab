@@ -9,15 +9,15 @@ var rgName2 = 'rg-waf-az-lab-scenario-1-web'
 var rgName3 = 'rg-waf-az-lab-scenario-1-app'
 var rgname4 = 'rg-waf-az-lab-scenario-1-data'
 var vnetName = 'SpokeVNet01'
-//var appGWName = 's1-appgw-${uniqueString(subscription().id)}'
+var appGWName = 's1-appgw-${uniqueString(subscription().id)}'
 var vnet2Name = 'coreVNet'
-//var ilbName = 's1-ilb-${uniqueString(subscription().id)}'
-//var ergatewayname = 's1-ergw-${uniqueString(subscription().id)}'
+var ilbName = 's1-ilb-${uniqueString(subscription().id)}'
+var ergatewayname = 's1-ergw-${uniqueString(subscription().id)}'
 
-//@secure()
-//param localadminpw string
+@secure()
+param localadminpw string
 
-//var localadmin = 'azureadmin'
+var localadmin = 'azureadmin'
 
 resource resourceGroup1 'Microsoft.Resources/resourceGroups@2021-04-01' = {
   name: rgName1
@@ -35,7 +35,7 @@ resource resourceGroup4 'Microsoft.Resources/resourceGroups@2021-04-01' = {
   name: rgname4
   location: location
 }
-/*
+
 var webTierSpec = [
   {
     name: 'webServ01'
@@ -78,7 +78,7 @@ var dataTierSpec = [
     zone: 0
   }
 ]
-*/
+
 
 // NSGs for web, app and data tiers
 
@@ -110,78 +110,6 @@ module networkSecurityGroup1 'br/public:avm/res/network/network-security-group:0
   }
 }
 
-module networkSecurityGroup2 'br/public:avm/res/network/network-security-group:0.3.1' = {
-  scope : resourceGroup2
-  name: 'nsgDeployment2'
-  params: {
-    // Required parameters
-    name: 'appNsg'
-    enableTelemetry:false
-    // Non-required parameters
-    location: resourceGroup2.location 
-    securityRules: [
-      {
-        name: 'allow_web_app_traffic'
-        properties: {
-          access: 'Allow'
-          destinationAddressPrefix: '172.16.2.0/25'
-          destinationPortRanges: [
-            '443'
-          ]
-          
-          direction: 'Inbound'
-          priority: 250
-          protocol: 'Tcp'
-          sourceAddressPrefix: '172.16.1.0/25'
-          sourcePortRange: '443'
-        }
-      }
-      {
-        name: 'allow_app_data_traffic'
-        properties: {
-          access: 'Allow'
-          destinationAddressPrefix: '172.16.2.128/25'
-          destinationPortRanges: [
-            '1433'
-          ]
-          direction: 'Outbound'
-          priority: 300
-          protocol: 'Tcp'
-          sourceAddressPrefix: '172.16.2.0/25'
-          sourcePortRange: '1433'
-        }
-      }
-    ]
-  }
-}
-
-module networkSecurityGroup3 'br/public:avm/res/network/network-security-group:0.3.1' = {
-  scope : resourceGroup4
-  name: 'networkSecurityGroupDeployment'
-  params: {
-    // Required parameters
-    name: 'dataNsg'
-    // Non-required parameters
-    location: resourceGroup4.location 
-    securityRules: [
-      {
-        name: 'allow_SQL_inbound'
-        properties: {
-          access: 'Allow'
-          destinationAddressPrefix: '172.16.2.128/25'
-          destinationPortRanges: [
-            '1433'
-          ]
-          direction: 'Inbound'
-          priority: 200
-          protocol: 'Tcp'
-          sourceAddressPrefix: '172.16.2.0/25'
-          sourcePortRange: '1433'
-        }
-      }
-    ]
-  }
-}
 
 var vnetAddressPrefix = [
   '172.16.0.0/16'
@@ -190,22 +118,18 @@ var subnetSpec = [
   {
     name: 'appGatewaySubnet'
     addressPrefix: '172.16.1.144/28'
-    nsgName: 'webNsg'
   }
   {
     name: 'frontEndSubnet'
     addressPrefix: '172.16.1.0/25'
-    nsgName : 'webNsg'
   }
   {
     name: 'appTierSubnet'
     addressPrefix: '172.16.2.0/25'
-    nsgName: 'appNsg'
   }
   {
     name: 'dataSubnet'    
     addressPrefix: '172.16.2.128/25'
-    nsgName: 'dataNsg'
   }
 ]
 
@@ -220,12 +144,12 @@ module virtualNetwork 'br/public:avm/res/network/virtual-network:0.1.6' = {
       for subnet in subnetSpec: {
         name: subnet.name
         addressPrefix: subnet.addressPrefix
-        networkSecurityGroupResourceId:  resourceId('Microsoft.Network/networkSecurityGroups',subnet.nsgName)
+        networkSecurityGroupResourceId:  networkSecurityGroup1.outputs.resourceId
       }      
     ]
   }
 }
-/*
+
 //VMs for Web Tier
 module webvirtualMachine 'br/public:avm/res/compute/virtual-machine:0.5.3' = [for webserver in webTierSpec: {
   name: webserver.name
@@ -442,7 +366,7 @@ module appGW1 'layers/appgw.bicep' = {
     location: location
   }
 }
-*/
+
 //Setting up Core VNet
 
 var corevnetAddressPrefix = [
@@ -477,7 +401,7 @@ module coreVirtualNetwork 'br/public:avm/res/network/virtual-network:0.1.6' = {
     ]
   }
 }
-/*
+
 //create Key Vault
 module kvcreate 'layers/kvcreate.bicep' = {
   scope: resourceGroup2
@@ -503,5 +427,3 @@ module virtualNetworkGateway 'br/public:avm/res/network/virtual-network-gateway:
     location: resourceGroup1.location
   }
 }
-
-*/
