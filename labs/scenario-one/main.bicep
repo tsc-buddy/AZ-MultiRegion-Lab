@@ -92,21 +92,37 @@ module networkSecurityGroup1 'br/public:avm/res/network/network-security-group:0
     location: resourceGroup2.location 
     securityRules: [
       {
-        name: 'allow_secure_web_inbound'
+        name: 'allow_appgw_inbound'
         properties: {
           access: 'Allow'
-          destinationAddressPrefix: '172.16.1.0/24'
+          destinationAddressPrefix: '172.16.1.144/28'
           destinationPortRanges: [
-            '443'
+            '65200 - 65535'
           ]
           direction: 'Inbound'
           priority: 200
           protocol: 'Tcp'
           sourceAddressPrefix: '*'
-          sourcePortRange: '443'
+          sourcePortRange: '*'
+        }
+      }
+      {
+        name: 'allow_https_inbound'
+        properties: {
+          access: 'Allow'
+          destinationAddressPrefix: '*'
+          destinationPortRanges: [
+            '443'
+          ]
+          direction: 'Inbound'
+          priority: 250
+          protocol: 'Tcp'
+          sourceAddressPrefix: '*'
+          sourcePortRange: '*'
         }
       }
     ]
+    
   }
 }
 
