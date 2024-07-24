@@ -95,7 +95,7 @@ module networkSecurityGroup1 'br/public:avm/res/network/network-security-group:0
         name: 'allow_appgw_inbound'
         properties: {
           access: 'Allow'
-          destinationAddressPrefix: '172.16.1.144/28'
+          destinationAddressPrefix: '*'  
           destinationPortRanges: [
             '65200 - 65535'
           ]
@@ -110,7 +110,7 @@ module networkSecurityGroup1 'br/public:avm/res/network/network-security-group:0
         name: 'allow_https_inbound'
         properties: {
           access: 'Allow'
-          destinationAddressPrefix: '*'
+          destinationAddressPrefix: '*'    //everything else
           destinationPortRanges: [
             '443'
           ]
