@@ -166,15 +166,22 @@ module sqlServer 'br/public:avm/res/sql/server:0.4.0' = {
       {
         name: 'azlabdb'
         maxSizeBytes: 2147483648
-        skuName: 'Standard'
-        skuTier: 'Standard'
+        skuName: 'GP_Gen5'
+        skuTier: 'GeneralPurpose'
+        skuCapacity: 2
+        family: 'Gen5'
+        collation: 'SQL_Latin1_General_CP1_CI_AS'
+        requestedBackupStorageRedundancy: 'Geo'
       }
       {
         name: 'appdb'
         maxSizeBytes: 2147483648
-        skuName: 'Standard'
-        skuTier: 'Standard'
-
+        skuName: 'GP_Gen5'
+        skuTier: 'GeneralPurpose'
+        skuCapacity: 2
+        family: 'Gen5'
+        collation: 'SQL_Latin1_General_CP1_CI_AS'
+        requestedBackupStorageRedundancy: 'Geo'
       }
     ]
     location: location
@@ -192,15 +199,15 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.9.1' = {
   }
 }
 
-/* module apim 'layers/apim.bicep' = {
+module apim 'layers/apim.bicep' = {
   scope: resourceGroup
-  name: 'apimDeployment-s2'
+  name: 'apimDeployment-sc2'
   params: {
     apimName: apimName
     location: location
   }
 }
- */
+
 module appGW 'layers/appgw.bicep' = {
   scope: resourceGroup
   name: 'appGW1'
@@ -212,4 +219,3 @@ module appGW 'layers/appgw.bicep' = {
     location: location
   }
 }
- 

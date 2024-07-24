@@ -1,4 +1,4 @@
-# WA-MZ-MR-Patterns (Pilot)
+# AZ and Multi-Region Remediation Lab
 
 
 ### The content is in full development as of 01/07/23. 

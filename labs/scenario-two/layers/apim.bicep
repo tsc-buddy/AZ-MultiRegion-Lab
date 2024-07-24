@@ -8,29 +8,31 @@ resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-
   location: location
 }
 
-module service 'br/public:avm/res/api-management/service:0.1.7' = {
-  name: 'apimDeployment-s2'
+module service 'br/public:avm/res/api-management/service:0.2.1' = {
+  name: apimName
   params: {
     // Required parameters
     name: apimName
     publisherEmail: 'apimgmt-noreply@mail.windowsazure.com'
     publisherName: 'az-amorg-x-001'
-    sku: 'StandardV2'
-    skuCount: 1
-    // Non-required parameters
-
+    sku: 'Premium'
+    skuCount: 2
+    zones: [
+      1
+      2
+    ]
     apis: [
       {
         apiVersionSet: {
-          name: 'echo-version-set'
+          name: 'ACME Demo API'
           properties: {
             description: 'An echo API version set'
-            displayName: 'Echo version set'
+            displayName: 'ACME Echo API'
             versioningScheme: 'Segment'
           }
         }
         description: 'An echo API service'
-        displayName: 'Echo API'
+        displayName: 'ACME API'
         name: 'echo-api'
         path: 'echo'
         serviceUrl: 'https://echoapi.cloudapp.net/api'
@@ -63,26 +65,6 @@ module service 'br/public:avm/res/api-management/service:0.1.7' = {
       'Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Protocols.Tls10': 'False'
       'Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Protocols.Tls11': 'False'
     }
-    diagnosticSettings: [
-      {
-        eventHubAuthorizationRuleResourceId: '<eventHubAuthorizationRuleResourceId>'
-        eventHubName: '<eventHubName>'
-        storageAccountResourceId: '<storageAccountResourceId>'
-        workspaceResourceId: '<workspaceResourceId>'
-      }
-    ]
-    identityProviders: [
-      {
-        allowedTenants: [
-          'mytenant.onmicrosoft.com'
-        ]
-        authority: '<authority>'
-        clientId: 'apimClientid'
-        clientSecret: '<clientSecret>'
-        name: 'aad'
-        signinTenant: 'mytenant.onmicrosoft.com'
-      }
-    ]
     location: location
     managedIdentities: {
       systemAssigned: true
@@ -126,18 +108,18 @@ module service 'br/public:avm/res/api-management/service:0.1.7' = {
       {
         apis: [
           {
-            name: 'echo-api'
+            name: 'acme-api'
           }
         ]
         approvalRequired: true
-        description: 'This is an echo API'
-        displayName: 'Echo API'
+        description: 'This is an acme echo API'
+        displayName: 'ACME APIs'
         groups: [
           {
             name: 'developers'
           }
         ]
-        name: 'Starter'
+        name: 'ACME APIs'
         subscriptionRequired: true
         terms: 'By accessing or using the services provided by Echo API through Azure API Management, you agree to be bound by these Terms of Use. These terms may be updated from time to time, and your continued use of the services constitutes acceptance of any changes.'
       }
