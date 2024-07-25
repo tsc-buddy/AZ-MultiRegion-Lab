@@ -201,7 +201,7 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.9.1' = {
 
 module apim 'layers/apim.bicep' = {
   scope: resourceGroup
-  name: 'apimDeployment-sc2'
+  name: 'apimDeployment-s2'
   params: {
     apimName: apimName
     location: location
