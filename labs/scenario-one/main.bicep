@@ -23,19 +23,6 @@ resource resourceGroup1 'Microsoft.Resources/resourceGroups@2021-04-01' = {
   name: rgName1
   location: location
 }
-resource resourceGroup2 'Microsoft.Resources/resourceGroups@2021-04-01' = {
-  name: rgName2
-  location: location
-}
-resource resourceGroup3 'Microsoft.Resources/resourceGroups@2021-04-01' = {
-  name: rgName3
-  location: location
-}
-resource resourceGroup4 'Microsoft.Resources/resourceGroups@2021-04-01' = {
-  name: rgname4
-  location: location
-}
-
 var webTierSpec = [
   {
     name: 'webServ01'
@@ -83,13 +70,13 @@ var dataTierSpec = [
 // NSGs for web, app and data tiers
 
 module networkSecurityGroup1 'br/public:avm/res/network/network-security-group:0.3.1' = {
-  scope : resourceGroup2
+  scope : resourceGroup1
   name: 'nsgDeployment1'
   params: {
     // Required parameters
     name: 'webNsg'
     // Non-required parameters
-    location: resourceGroup2.location 
+    location: resourceGroup1.location 
     securityRules: [
       {
         name: 'allow_appgw_inbound'
@@ -169,7 +156,7 @@ module virtualNetwork 'br/public:avm/res/network/virtual-network:0.1.6' = {
 //VMs for Web Tier
 module webvirtualMachine 'br/public:avm/res/compute/virtual-machine:0.5.3' = [for webserver in webTierSpec: {
   name: webserver.name
-  scope: resourceGroup2
+  scope: resourceGroup1
   params: {
     // Required parameters
     adminUsername: localadmin
@@ -213,7 +200,7 @@ module webvirtualMachine 'br/public:avm/res/compute/virtual-machine:0.5.3' = [fo
 
 //VMs for App Tier
 module virtualMachine 'br/public:avm/res/compute/virtual-machine:0.5.3' = [for app in appTierSpec: {
-  scope: resourceGroup3
+  scope: resourceGroup1
   name: app.name
   params: {
     // Required parameters
@@ -262,7 +249,7 @@ module virtualMachine 'br/public:avm/res/compute/virtual-machine:0.5.3' = [for a
 // ILB for app tier
 
 module loadBalancer 'br/public:avm/res/network/load-balancer:0.2.2' = {
-  scope: resourceGroup3
+  scope: resourceGroup1
   name: 'loadBalancerDeployment'
   params: {
     // Required parameters
@@ -329,7 +316,7 @@ module loadBalancer 'br/public:avm/res/network/load-balancer:0.2.2' = {
 
 //VMs for Data Tier
 module sqlvirtualMachine 'br/public:avm/res/compute/virtual-machine:0.5.3' = [for sql in dataTierSpec: {
-  scope: resourceGroup4
+  scope: resourceGroup1
   name: sql.name
   params: {
     // Required parameters
@@ -372,7 +359,7 @@ module sqlvirtualMachine 'br/public:avm/res/compute/virtual-machine:0.5.3' = [fo
 ]
 
 module appGW1 'layers/appgw.bicep' = {
-  scope: resourceGroup2
+  scope: resourceGroup1
   name: 'appGW1'
   params: {
     appGWName: appGWName
@@ -420,10 +407,10 @@ module coreVirtualNetwork 'br/public:avm/res/network/virtual-network:0.1.6' = {
 
 //create Key Vault
 module kvcreate 'layers/kvcreate.bicep' = {
-  scope: resourceGroup2
+  scope: resourceGroup1
   name : 'keyvault'
   params: {
-    location: resourceGroup2.location
+    location: resourceGroup1.location
     adminPassword: localadminpw
   }
 
