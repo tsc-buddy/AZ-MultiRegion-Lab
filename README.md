@@ -12,6 +12,18 @@ The purpose of this lab is to provide a semi-guided experience for consumers to 
 
 This is achieved through deploying a synthetic workloads infrastructure in one of two archetypes (VM IaaS Based or fully PaaS based), then leveraging a mixture of the public Availabiltiy Zone Migration guidance and content developed exclusively for this lab within the Lab Guide Document. The same applies for the Multi-region scenario, leveraging the Lab Guide and a some of Microsofts Public docs.  
 
+## Prerequisites
+
+To complete this lab and any of its scenarios, you need to have the following prerequisites met.
+
+- An active azure subscription
+- Azure Powershell / Azure CLI installed
+- Azure Bicep Installed
+- VSCode with the Bicep Extension
+- Azure Storage Explorer
+- SQL Server (mssql) - VS Code Extension (optional)
+
+
 ## The workloads
 
 Please note - as of July 2024, this lab deploys just the infrastructure for the sythetic workload. There is no application deployment on top at this stage. We are focusing solely on Infrastructure remediation at this point, but will look to develop a basic application to deploy on top of this infrastructure to provide additional insights into the effects that Az migration / multi-region implementations steps has at the application level.
