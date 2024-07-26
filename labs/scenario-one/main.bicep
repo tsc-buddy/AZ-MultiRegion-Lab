@@ -2,6 +2,39 @@ metadata name = 'Scenario One'
 metadata description = 'This bicep codes deploys application infrastructure for scenario one, a web based IaaS application with a database backend.'
 targetScope = 'subscription'
 
+@allowed([
+  'eastus'
+  'eastus2'
+  'southcentralus'
+  'westus2'
+  'westus3'
+  'centralus'
+  'mexicocentral'
+  'brazilsouth'
+  'canadacentral'
+  'australiaeast'
+  'southeastasia'
+  'centralindia'
+  'eastasia' 
+  'japaneast'
+  'koreacentral'
+  'southafricanorth'
+  'northeurope'
+  'swedencentral'
+  'uksouth'              
+  'westeurope'
+  'francecentral'
+  'germanywestcentral'
+  'italynorth'
+  'norwayeast'
+  'polandcentral'
+  'spaincentral'
+  'switzerlandnorth'
+  'uaenorth'
+  'israelcentral'
+  'qatarcentral'
+])
+@description('The Azure region you wish to deploy to. It must support availability zones.')
 param location string = 'eastus2'
 
 var rgName1 = 'rg-waf-az-lab-scenario-1-core'
@@ -11,8 +44,8 @@ var vnet2Name = 'coreVNet'
 var ilbName = 's1-ilb-${uniqueString(subscription().id)}'
 var ergatewayname = 's1-ergw-${uniqueString(subscription().id)}'
 
-@secure()
-param localadminpw string
+
+var localadminpw = 'MzMrL@bM@ch1ne$Axc3s$p#Raz3'
 
 var localadmin = 'azureadmin'
 
@@ -97,6 +130,7 @@ module networkSecurityGroup1 'br/public:avm/res/network/network-security-group:0
           destinationAddressPrefix: '*'  
           destinationPortRanges: [
             '443'
+            '80'
           ]
           direction: 'Inbound'
           priority: 250
@@ -110,14 +144,13 @@ module networkSecurityGroup1 'br/public:avm/res/network/network-security-group:0
   }
 }
 
-
 var vnetAddressPrefix = [
   '172.16.0.0/16'
 ]
 var subnetSpec = [
   {
     name: 'appGatewaySubnet'
-    addressPrefix: '172.16.1.144/28'
+    addressPrefix: '172.16.1.128/25'
   }
   {
     name: 'frontEndSubnet'
@@ -144,7 +177,8 @@ module virtualNetwork 'br/public:avm/res/network/virtual-network:0.1.6' = {
       for subnet in subnetSpec: {
         name: subnet.name
         addressPrefix: subnet.addressPrefix
-        networkSecurityGroupResourceId:  networkSecurityGroup1.outputs.resourceId
+        networkSecurityGroupResourceId: networkSecurityGroup1.outputs.resourceId
+        privateLinkServiceNetworkPolicies: 'Disabled'
       }      
     ]
   }
@@ -362,7 +396,6 @@ module appGW1 'layers/appgw.bicep' = {
     appGWName: appGWName
     appGWSubnetId: virtualNetwork.outputs.subnetResourceIds[0]
     bePoolName: 'web-be-pool'
-    beSiteFqdn: '172.16.3.4'
     location: location
   }
 }
@@ -393,6 +426,19 @@ module coreVirtualNetwork 'br/public:avm/res/network/virtual-network:0.1.6' = {
   params: {
     name: vnet2Name
     addressPrefixes: corevnetAddressPrefix
+    peerings: [
+      {
+        allowForwardedTraffic: true
+        allowGatewayTransit: true
+        allowVirtualNetworkAccess: true
+        remotePeeringAllowForwardedTraffic: true
+        remotePeeringAllowVirtualNetworkAccess: true
+        remotePeeringEnabled: true
+        remotePeeringName: 'hubToSpoke'
+        remoteVirtualNetworkId: virtualNetwork.outputs.resourceId
+        useRemoteGateways: false
+      }
+    ]
     subnets: [
       for subnets in coresubnetSpec: {
         name: subnets.name

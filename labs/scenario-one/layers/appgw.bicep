@@ -2,10 +2,10 @@
 param location string
 param appGWName string
 param tags object?
-param beSiteFqdn string
 param bePoolName string
 param appGWSubnetId string
 var appGWPIPName = 'r-agwpip-${uniqueString(subscription().id)}'
+
 
 resource publicIPAddress 'Microsoft.Network/publicIPAddresses@2023-09-01' = {
   name: appGWPIPName
@@ -30,11 +30,7 @@ module appGW 'br/public:avm/res/network/application-gateway:0.1.0' = {
         {
           name: bePoolName
           properties: {
-            backendAddresses: [
-              {
-                fqdn: beSiteFqdn
-              }
-            ]
+            backendAddresses: []
           }
         }
       ]
@@ -55,10 +51,19 @@ module appGW 'br/public:avm/res/network/application-gateway:0.1.0' = {
         {
           name: 'public'
           properties: {
-            privateIPAllocationMethod: 'Dynamic'
             publicIPAddress: {
               id: publicIPAddress.id
             }
+          }
+        }
+        {
+          name: 'private'
+          properties: {
+            privateIPAddress: '172.16.1.180'
+            privateIPAllocationMethod: 'Static'
+          subnet: {
+            id: appGWSubnetId
+          }
           }
         }
       ]
@@ -96,6 +101,22 @@ module appGW 'br/public:avm/res/network/application-gateway:0.1.0' = {
             customErrorConfigurations: []
           }
         }
+        {
+          name: 'private80'
+          properties: {
+            frontendIPConfiguration: {
+              id: resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', appGWName, 'private')
+            }
+            frontendPort: {
+              id: resourceId('Microsoft.Network/applicationGateways/frontendPorts', appGWName, 'port80')
+            }
+            hostNames: []
+            protocol: 'http'
+            requireServerNameIndication: false
+            customErrorConfigurations: []
+          }
+        }
+
       ]
       probes: []
       redirectConfigurations: []
@@ -114,6 +135,23 @@ module appGW 'br/public:avm/res/network/application-gateway:0.1.0' = {
               id: resourceId('Microsoft.Network/applicationGateways/httpListeners', appGWName, 'public80')
             }
             priority: 200
+            ruleType: 'Basic'
+          }
+        }
+        {
+          name: 'private443-appServiceBackendHttpsSetting-appServiceBackendHttpsSetting'
+          properties: {
+            backendAddressPool: {
+              id: resourceId('Microsoft.Network/applicationGateways/backendAddressPools', appGWName, bePoolName)
+              
+            }
+            backendHttpSettings: {
+              id: resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', appGWName, 'appServiceBackendHttpsSetting')
+            }
+            httpListener: {
+              id: resourceId('Microsoft.Network/applicationGateways/httpListeners', appGWName, 'private80')
+            }
+            priority: 400
             ruleType: 'Basic'
           }
         }
