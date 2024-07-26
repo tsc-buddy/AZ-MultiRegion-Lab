@@ -1,40 +1,30 @@
 # AZ and Multi-Region Remediation Lab
 
 
-### The content is in full development as of 01/07/23. 
+### The content is in full development as of July 2024
 
-This repo contains Multi-Zone and Multi-Region Patterns for various Azure Architecture patterns. The following azure services / patterns for Multi Zone and Multi Region **brownfields** deployments will be as followed:
+This repo contains content for Hands-on Self paced Lab based on the following scenarios:
 
-- Virtual Machine Scale Sets
-- Standalone Azure SQL
-- Azure Kubernetes Services
-- Two Tier Application running on App Services and Azure SQL
+- The migration of Azure services that are deployed and not leveraging availability zones for resiliency
+- Workloads that are deployed in a single region, with a desire to adopt a multi-region resiliency strategy.
 
-## Prerequisites
+The purpose of this lab is to provide a semi-guided experience for consumers to get hands-on with the migration of services to leverage AZ's or implement a multi-region workload pattern in an environment that is not related to any production workload, thus providing a safe space to conduct such activities in preparation for remediating resiliency issues for live workloads. 
 
-Given that the artifacts within the repo are designed to address resiliency gaps for existing workloads, it assumes that certain resources are in place for a multi-zone or multi-region deployment to happen. Below is a breakdown of the core pre-reqs, followed by the resources that the deployment script has a dependency on.
+This is achieved through deploying a synthetic workloads infrastructure in one of two archetypes (VM IaaS Based or fully PaaS based), then leveraging a mixture of the public Availabiltiy Zone Migration guidance and content developed exclusively for this lab within the Lab Guide Document. The same applies for the Multi-region scenario, leveraging the Lab Guide and a some of Microsofts Public docs.  
 
-**Core requirements**
-- Azure subscription
-- Contributor access over the subscription or RG scope you wish to deploy the solution into
-- Access to connect to existing resources, specifically Virtual Networks subnets.
+## The workloads
 
-**Existing Resource Requirements**
+Please note - as of July 2024, this lab deploys just the infrastructure for the sythetic workload. There is no application deployment on top at this stage. We are focusing solely on Infrastructure remediation at this point, but will look to develop a basic application to deploy on top of this infrastructure to provide additional insights into the effects that Az migration / multi-region implementations steps has at the application level.
 
-- Single Region Multi Zone Deployment
-    - Ensure you select an Azure Region that supports availability zones
-    - Existing Virtual Network where both the VMSS and Load Balancer will reside
-    - A subnet in the above VNET for targeting the deployment into
+There are three lab scenarios to choose from:
 
-- Multi Region Multi Zone Deployment
-    - Ensure you select two Azure Region that supports availability zones
-    - Existing Virtual Networks in both regions where the VMSS and Load Balancer will reside
-    - A subnet in the above VNET for targeting the deployment into
+1. Single Region IaaS Based Infrastructure Availability Zone Remediation
+2. Single Region PaaS Based Infrastructure Availability Zone Remediation
+3. Multi-region implementation using the PaaS based infrastructure design from scenario two.
 
-**Deployment Options**
 
-We are focusing our efforts on providing deployments options based on both Azure Bicep and Terraform. You will find some patterns contain options for Azure CLI or Azure Powershell, however these will not be our active focus moving forward.
-
+### Scenario Two Reference Architecture
+![Scenario Two](docs/images/scenario-2.jpg)
 
 # Contribution
 ![Contributors](https://contrib.rocks/image?repo=tsc-buddy/WA-MZ-MR-Patterns)
