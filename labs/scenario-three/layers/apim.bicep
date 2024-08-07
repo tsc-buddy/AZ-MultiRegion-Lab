@@ -16,28 +16,28 @@ module service 'br/public:avm/res/api-management/service:0.2.1' = {
     publisherEmail: 'apimgmt-noreply@mail.windowsazure.com'
     publisherName: 'az-amorg-x-001'
     sku: 'Premium'
-    skuCount: 3
+    skuCount: 2
     zones: [
       1
       2
-      3
+      
     ]
     // Non-required parameters
 
     apis: [
       {
         apiVersionSet: {
-          name: 'ACME Demo API'
+          name: 'acme-api-version-set'
           properties: {
             description: 'An echo API version set'
             displayName: 'ACME Echo API'
             versioningScheme: 'Segment'
           }
         }
-        description: 'An echo API service'
-        displayName: 'ACME API'
-        name: 'echo-api'
-        path: 'echo'
+        description: 'An Acme API service'
+        displayName: 'ACME-API'
+        name: 'acme-api'
+        path: 'acme-echo'
         serviceUrl: 'https://echoapi.cloudapp.net/api'
       }
     ]
@@ -68,7 +68,6 @@ module service 'br/public:avm/res/api-management/service:0.2.1' = {
       'Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Protocols.Tls10': 'False'
       'Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Protocols.Tls11': 'False'
     }
-    
     location: location
     managedIdentities: {
       systemAssigned: true
@@ -117,13 +116,13 @@ module service 'br/public:avm/res/api-management/service:0.2.1' = {
         ]
         approvalRequired: true
         description: 'This is an acme echo API'
-        displayName: 'ACME APIs'
+        displayName: 'ACME-API'
         groups: [
           {
             name: 'developers'
           }
         ]
-        name: 'ACME APIs'
+        name: 'acme-api'
         subscriptionRequired: true
         terms: 'By accessing or using the services provided by Echo API through Azure API Management, you agree to be bound by these Terms of Use. These terms may be updated from time to time, and your continued use of the services constitutes acceptance of any changes.'
       }

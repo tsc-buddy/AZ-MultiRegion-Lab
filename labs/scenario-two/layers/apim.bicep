@@ -34,7 +34,7 @@ module service 'br/public:avm/res/api-management/service:0.2.1' = {
         description: 'An Acme API service'
         displayName: 'ACME-API'
         name: 'acme-api'
-        path: 'echo'
+        path: 'acme-echo'
         serviceUrl: 'https://echoapi.cloudapp.net/api'
       }
     ]

@@ -44,9 +44,11 @@ param sqlpassword string
 @sys.description('Creates an APPGW if True (Default: true)')
 param createAppGw bool = true
 
-var rgName = 'rg-waf-mr-lab-scenario-3'
+param zoneredundant bool = true
+
+var rgName = 'rg-waf-mrn-lab-scenario-3'
 var vnetName = 's3-vnet-${uniqueString(subscription().id)}'
-var apimName = 's3-apim-${uniqueString(subscription().id)}'
+var apimName = 's3-apims-${uniqueString(subscription().id)}'
 var appGWName = 's3-appgw-${uniqueString(subscription().id)}'
 var sqlServerName = 's3-sql-${uniqueString(subscription().id)}'
 var storageAccountName = 's3sa${uniqueString(subscription().id)}'
@@ -114,7 +116,7 @@ module serverFarm 'br/public:avm/res/web/serverfarm:0.1.1' =  [for farm in appSe
       size: 'P1v3'
       tier: 'PremiumV3'
     }
-    zoneRedundant: true
+    zoneRedundant: zoneredundant
   }
 }
 ]
@@ -172,22 +174,22 @@ module sqlServer 'br/public:avm/res/sql/server:0.4.0' = {
         maxSizeBytes: 2147483648
         skuName: 'GP_Gen5'
         skuTier: 'GeneralPurpose'
-        skuCapacity: 3
+        skuCapacity: 2
         family: 'Gen5'
         collation: 'SQL_Latin1_General_CP1_CI_AS'
         requestedBackupStorageRedundancy: 'Geo'
-        zoneredundant: 'true'
+        zoneredundant: zoneredundant
       }
       {
         name: 'appdb'
         maxSizeBytes: 2147483648
         skuName: 'GP_Gen5'
         skuTier: 'GeneralPurpose'
-        skuCapacity: 3
+        skuCapacity: 2
         family: 'Gen5'
         collation: 'SQL_Latin1_General_CP1_CI_AS'
         requestedBackupStorageRedundancy: 'Geo'
-        zoneredundant: 'true'
+        zoneredundant: zoneredundant
 
       }
     ]
