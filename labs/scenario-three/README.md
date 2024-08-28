@@ -214,14 +214,15 @@ Tutorial: Create a WAF policy for Azure Front Door - Azure portal | Microsoft Le
 Traffic routing methods to origin - Azure Front Door | Microsoft Learn
 Health probes - Azure Front Door | Microsoft Learn
 
-Azure Key Vault
+**Azure Key Vault**
+
 For most Azure regions that are paired with another region, the contents of your key vault are replicated both within the region and to the paired region. The paired region is usually at least 150 miles away, but within the same geography. This approach ensures high durability of your keys and secrets. For more information about Azure region pairs, see Azure paired regions. Two exceptions are the Brazil South region, which is paired to a region in another geography, and the West US 3 region. When you create key vaults in Brazil South or West US 3, they aren't replicated across regions.
 For non-paired Azure regions, as well as the Brazil South and West US 3 regions, Azure Key Vault uses zone redundant storage (ZRS) to replicate your data three times within the region, across independent availability zones. For Azure Key Vault Premium, two of the three zones are used to replicate the hardware security module (HSM) keys.
 You can also use the backup and restore feature to replicate the contents of your vault to another region of your choice.
 
 Azure Key Vault availability and redundancy - Azure Key Vault | Microsoft Learn
 
-Azure Private DNS Zone
+**Azure Private DNS Zone**
 
  DNS private zones are resilient to regional outages because zone data is globally available. Resource records in a private zone are automatically replicated across regions. To make sure the secondary region can connect with the DNZ Zone, we need to link the secondary region v-net. Quickstart - Create an Azure private DNS zone using the Azure portal | Microsoft Learn
 This architecture uses functionality of private endpoints that may not be commonly encountered when doing single region deployments.
@@ -240,7 +241,8 @@ Azure Storage Account is down – It is enabled with GRS. So, we need to initiat
 Azure Key Vault is down – Nothing needs to be done
 Entire region is down – Manually start the AppGw and App service instances in secondary and perform manual failovers for other services like SQL and Storage Account.
 
-Composite Availability Estimate
+**Composite Availability Estimate**
+
 Prior to the implementation of secondary region across this workloads architecture we had a baseline composite availability estimate, shown below in the table. The calculated estimate is intended to be used as a rough-order-of-magnitude (ROM) estimate for the general availability of a workload based on the design and dependency chain of each critical flow. Below is a table showing the availability metrics before and after remediation for each of the critical flows and for the entire architecture.
 
 Call to Action: Using the Composite Availability Estimate Calculator, work out the Project Max Minutes of Downtime/month and the Composite Availability Target to compare the before and after based on the changes you have made.
