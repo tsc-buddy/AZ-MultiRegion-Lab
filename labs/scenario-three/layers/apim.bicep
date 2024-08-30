@@ -1,7 +1,7 @@
 param tags object?
 param location string
 param apimName string
-var managedIdentityName = 's2-apim-mi'
+var managedIdentityName = 's3-apim-mi'
 
 resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
   name: managedIdentityName
