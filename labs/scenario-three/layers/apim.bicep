@@ -1,7 +1,7 @@
 param tags object?
 param location string
 param apimName string
-var managedIdentityName = 's2-apim-mi'
+var managedIdentityName = 's3-apim-mi'
 
 resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
   name: managedIdentityName
@@ -20,7 +20,10 @@ module service 'br/public:avm/res/api-management/service:0.2.1' = {
     zones: [
       1
       2
+      
     ]
+    // Non-required parameters
+
     apis: [
       {
         apiVersionSet: {
