@@ -34,6 +34,8 @@ There are three lab scenarios to choose from:
 2.[Single Region PaaS Based Infrastructure Availability Zone Remediation](./labs/scenario-two/README.md)
 3. [Multi-region implementation using the PaaS based infrastructure design from scenario two.](./labs/scenario-three/README.md)
 
+There is a workload preface that can be found [here](./docs/workloadPreface.md). It contains some fictional notes from a customer conversation and details about some of the 'Tracker' applications critical flows.
+
 
 ### Scenario Two Reference Architecture
 ![Scenario Two](docs/images/scenario-2.jpg)
