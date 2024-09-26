@@ -6,8 +6,6 @@ Depending on the scenario you select, you will be faced with an IaaS, PaaS or a 
 
 ### Customer Conversation Transcript Notes (The following has been developed in preperation for future lab scenarios and is just a fictional story to give the upcoming application some background.)
 
-Note that is this is deliberately 
-
 **Workload Purpose:** Tracker is our internal consultant resource and project tracking application. It has been developed in-house. The entire business uses it for time sheeting, PMs & Tech Leads track project budget burndown against high-level project features synced from ADO and to analyze productivity improvements from new tooling, frameworks, mentoring etc.  
 
 Our Leadership team use it for capacity planning and revenue forecasting purposes. It also has integration into our CRM it for billing purposes. 
