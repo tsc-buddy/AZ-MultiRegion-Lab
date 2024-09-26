@@ -1,0 +1,19 @@
+# Workload Background
+
+The synthetic workloads used in each of the scenarios is based on Acme Limited, a multi-national technology consulting business. They have developed an internal project and resource tracking application called, **Tracker**. Its purpose is to allow its project managers and engineering leads plan project, understand capacity requirements across the different consulting engagements, whilst also forecasting an individual’s availability and bench time. Furthermore, it has integrations into external systems such as Azure Devops and Dynamics 365. 
+You have identified the key areas of the workload that need to be addressed. This has been done through gaining an understanding of the workloads criticality to the business, its availability targets and the critical user and data flows to ensure the correct components are being addressed.
+Depending on the scenario you select, you will be faced with an IaaS, PaaS or a multi-region based infrastructure architecture.
+
+### Critical Data Flows
+
+During a recent assessment of workloads resiliency posture, you identified three user/data flows that were important to Acme and the users of the Tracker App. Below you will find diagrams illustrating the identified flows across the different archetypes of the workload, the IaaS and PaaS ones respectively. You can use this information across all three scenarios to help determine remediation impact, failover measures and more.
+
+| Flow Name | Flow Type | Flow Notes | Criticality (low,med, crit) | Critical Flow Components |
+|----------|----------|----------|----------|----------|
+| Login Flow   | User     | Users authenticate with Entra ID (which is synced to ADDS back on prem). DNS resolution can be done via the public DNS servers or via our private ADDS Integrated DNS Servers (not illustrated on the diagram)      | crit     | Entra ID, AppGW, FE VMs, Express Route & GW, Azure FW (for on-prem users).      |
+| Time sheeting     | User     | Users log their time daily in 15 minute increments. It is company policy that time sheets are done daily.      | crit     | AppGW, FE VMs, Express Route & GW, Azure FW (for on-prem users), Azure SQL, API App Services, APIM      |
+| Project burndown Updates     | System     | A process runs daily to update the project burndown based on that days completed time sheets. This runs at 2200.      | med     | Azure SQL, Web Job on Azure App Services      |
+| Project Creation   | user     | Project Managers can create projects through the UI when given the green light by customer account managers. They create projects, link them to an ADO project and can assign individual resources (consultants) to that project to time sheet against it.      | med     | AppGW, FE VMs, Express Route & GW, Azure FW (for on-prem users), Azure SQL, API App Services, APIM      |
+| ADO Feature Integration     | System    | A process runs twice daily to check for new backlog features added by the team that may need pulling into tracker. These items are used by the team to track their time against. This in turn also updates the remaining effort on that feature back in ADO      | med     | Azure SQL, Web Job on Azure App Services      |
+| Project Summarization Process     | System     | A process that runs on the 28th of every month to create summarized project data for reporting purposes. Its stored in a separate table for report creation and analysis purposes.      | med     | App Server VM, Azure SQL, On-prem SQL VM, Express Route & GW, Azure Firewall.      |
+| CRM Billing ingestion Process    | System      | Custom Dynamics processes hit the app server endpoint 3 times a month to ingest data for billing purposes. This is a legacy process that we never got around to migrating.      | crit     | App Server VM, Azure SQL, Public IP, Dynamics 365      |
