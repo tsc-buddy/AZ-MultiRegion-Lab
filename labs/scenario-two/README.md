@@ -2,6 +2,8 @@
 
 In this scenario you will be working with a PaaS infrastructure architecture. The application was originally built and run on virtual machines on-prem before being migrated to Azure and refactored to leverage PaaS. However, there are significant gaps around zone resiliency and given the criticality of this workload it must be able to tolerate a datacenter / availability zone failure within the primary Azure region used by Acme.
 
+For a brief summary of the workload and its flows, read the [workload preface](../../docs/workloadPreface.md) here.
+
 ![Scenario Two Workload](docs/images/scenario-2.jpg)
 
 ### Getting Started 
@@ -93,7 +95,7 @@ Something you will observe when reading the App Service Migration guidance on th
 ### Composite Availability Estimate
 AVailability Calculations are intended to be used as a rough-order-of-magnitude (ROM) estimate for the general availability of a workload based on the design and dependency chain of each critical flow. It is a great way to understand how design decisions relating to both the infrastructure in Azure and your application code play a role is a workloads level of potential availability.
 
-> **Call to Action:** Using the Microsoft Composite Availability Estimate Calculator (CATE), work out the Max Minutes of Downtime/month and the Composite Availability Target for the architecture and its critical flows to compare the before and after based on the changes you have made.
+> **Call to Action:** Using the Microsoft Composite Availability Estimate Calculator (CATE), work out the Max Minutes of Downtime/month and the Composite Availability Target for the architecture and its critical flows to compare the before and after based on the changes you have made. For a table of details about the critical flows, read the [workload preface](../../docs/workloadPreface.md).
 
 ### Cleanup
 When you have finished with this scenario as part of the lab, simply delete the resource group named ‘rg-waf-az-lab-scenario-2’. Everything that was deployed during the initial steps will reside within that resource group. 
