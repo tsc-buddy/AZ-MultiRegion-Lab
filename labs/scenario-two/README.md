@@ -4,7 +4,7 @@ In this scenario you will be working with a PaaS infrastructure architecture. Th
 
 For a brief summary of the workload and its flows, read the [workload preface](../../docs/workloadPreface.md) here.
 
-![Scenario Two Workload](docs/images/scenario-2.jpg)
+![Scenario Two Workload](../../docs/images/scenario-2.jpg)
 
 ### Getting Started 
 To begin the lab, your first step is to deploy the synthetic workloads infrastructure. This will deploy the Azure Infrastructure shown in the architecture above into a single resource group called rg-waf-az-lab-scenario-2. Ensure you have the prerequisites above complete before following the steps below.
