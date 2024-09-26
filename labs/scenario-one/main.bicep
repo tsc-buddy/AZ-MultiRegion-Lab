@@ -37,7 +37,7 @@ targetScope = 'subscription'
 @description('The Azure region you wish to deploy to. It must support availability zones.')
 param location string = 'eastus2'
 
-var rgName1 = 'rg-waf-az-lab-scenario-1-core'
+var rgName1 = 'rg-waf-az-lab-scenario-1'
 var vnetName = 'SpokeVNet01'
 var appGWName = 's1-appgw-${uniqueString(subscription().id)}'
 var vnet2Name = 'coreVNet'
