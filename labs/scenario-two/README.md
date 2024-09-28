@@ -93,7 +93,7 @@ Something you will observe when reading the App Service Migration guidance on th
 
 
 ### Composite Availability Estimate
-AVailability Calculations are intended to be used as a rough-order-of-magnitude (ROM) estimate for the general availability of a workload based on the design and dependency chain of each critical flow. It is a great way to understand how design decisions relating to both the infrastructure in Azure and your application code play a role is a workloads level of potential availability.
+Availability Calculations are intended to be used as a rough-order-of-magnitude (ROM) estimate for the general availability of a workload based on the design and dependency chain of each critical flow. It is a great way to understand how design decisions relating to both the infrastructure in Azure and your application code play a role is a workloads level of potential availability.
 
 > **Call to Action:** Using the Microsoft Composite Availability Estimate Calculator (CATE), work out the Max Minutes of Downtime/month and the Composite Availability Target for the architecture and its critical flows to compare the before and after based on the changes you have made. For a table of details about the critical flows, read the [workload preface](../../docs/workloadPreface.md).
 

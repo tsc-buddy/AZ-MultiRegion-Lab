@@ -152,8 +152,6 @@ Configure using Tutorial: Geo-replication & failover in portal - Azure SQL Datab
 In this lab, we are using an auto failover group to get a stable connection endpoint. Failover groups provide a read-write and a read-only listener endpoint. Configure your applications to use these endpoints. The listener endpoints automatically update DNS records during failover, redirecting traffic to the new primary database. Use Failover groups overview & best practices - Azure SQL Database | Microsoft Learn to set it up.
 The failovers can be managed by the customer or Microsoft. But if it's MS then it might take some time depending on the grace period and the failover policy for the secondary database to come up which might not suit the RTO & RPO requirements of the customer. So, a common exploration would be how to switch over within the RTO and RPO using customer managed failover. 
 
-___LINKS NEED ADDRESSING___
-
 ___Failover groups overview & best practices- Azure SQL Database | Microsoft Learn 
 Disaster recovery guidance - Azure SQL Database | Microsoft Learn
 Perform a recovery drill - Disaster recovery drills - Azure SQL Database | Microsoft Learn___
@@ -180,79 +178,88 @@ Considerations for Storage Account Failover with Private Endpoints - Failover co
 **API Management**
 
 Azure API Management serves as the gateway to the API Web App, it is there for security, performance and resiliency reasons, providing rate limiting, secure API access and circuit breaker functionality where required. 
-Azure API Management supports multi-region deployment, which enables API publishers to add regional API gateways to an existing API Management instance in one or more supported Azure regions. Multi-region deployment helps reduce request latency perceived by geographically distributed API consumers and improves service availability if one region goes offline. - Deploy Azure API Management instance to multiple Azure regions - Azure API Management | Microsoft Learn
-Or
-By publishing and managing your APIs via Azure API Management, you're taking advantage of fault tolerance and infrastructure capabilities that you'd otherwise design, implement, and manage manually. The Azure platform mitigates a large fraction of potential failures at a fraction of the cost.
+
+Azure API Management supports multi-region deployment, which enables API publishers to add regional API gateways to an existing API Management instance in one or more supported Azure regions. Multi-region deployment helps reduce request latency perceived by geographically distributed API consumers and improves service availability if one region goes offline. 
+
+[Deploy Azure API Management instance to multiple Azure regions - Azure API Management | Microsoft Learn](https://learn.microsoft.com/en-us/azure/api-management/api-management-howto-deploy-multi-region)
+
+Or By publishing and managing your APIs via Azure API Management, you're taking advantage of fault tolerance and infrastructure capabilities that you'd otherwise design, implement, and manage manually. The Azure platform mitigates a large fraction of potential failures at a fraction of the cost.
+
 To recover from availability problems that affect your API Management service, be ready to reconstitute your service in another region at any time. Depending on your recovery time objective, you might want to keep a standby service in one or more regions. You might also try to maintain their configuration and content in sync with the active service according to your recovery point objective. The API management backup and restore capabilities provide the necessary building blocks for implementing disaster recovery strategy.
-Backup and restore your Azure API Management instance for disaster recovery - Azure API Management | Microsoft Learn
-For testing downtime, leverage an application such as Postman to test API call to APIM whilst the migration is happening.
-For this lab, utilize option 1. 
-Active/Active - One alternative can be to utilize App Gateway with WAF to utilize security features, since APIM does not have its inbuilt firewall, with an APIM instance running in each region as its backend and it would be able to redirect calls to an active APIM instance.
-Web Layer
+
+[Backup and restore your Azure API Management instance for disaster recovery - Azure API Management | Microsoft Learn](https://learn.microsoft.com/en-us/azure/api-management/api-management-howto-disaster-recovery-backup-restore?tabs=powershell)
+
+For testing downtime, leverage an application such as Postman to test API call to APIM whilst the migration is happening. For this lab, utilize option 1. 
+
+Active/Active - One alternative can be to utilize App Gateway with WAF to utilize security features, since APIM does not have its own inbuilt firewall, with an APIM instance running in each region as its backend and it would be able to redirect calls to an active APIM instance.
+
+### Web Layer
 
 **App Services**
 
 It is a fully managed platform for creating and deploying cloud applications. It lets you define a set of compute resources for a web app to run, deploy web apps, and configure deployment slots. We would be deploying another web app service in the secondary region and add it as an endpoint to Application Gateway. 
-Keep the app in stopped state for the lab for Active/Passive - Cold spare.
-For Active/Active, you can keep it running.
+
+Keep the app in stopped state for the lab for Active/Passive - Cold spare. For Active/Active, you can keep it running.
 
 **Application Gateway & Load balancing**
 
 In this lab, you can choose not to deploy the Application Gateway if you are using Azure Front Door with WAF. However, if you are using Traffic Manager, then you would want to keep it.
 Deploy another instance of Application Gateway in the secondary region. We would keep all its configs similar to the one in Primary region.  Keep it stopped for Active/Passive - Cold.
-Tutorial: Create an application gateway with a Web Application Firewall using the Azure portal | Microsoft Learn
-Manage traffic to App Service - Azure Application Gateway | Microsoft Learn
-For Active/Active - keep it running.
-Resource to configure and understand Traffic Manager:Azure Traffic Manager | Microsoft Learn
-Create a TM Profile - Quickstart: Create a profile for HA of applications - Azure portal - Azure Traffic Manager | Microsoft Learn
-Routing Method - Azure Traffic Manager - traffic routing methods | Microsoft Learn
-Endpoint - Manage endpoints in Azure Traffic Manager | Microsoft Learn
-Endpoint Monitoring - Azure Traffic Manager endpoint monitoring | Microsoft Learn
+
+- [Tutorial: Create an application gateway with a Web Application Firewall using the Azure portal | Microsoft Learn](https://learn.microsoft.com/en-us/azure/web-application-firewall/ag/application-gateway-web-application-firewall-portal)
+- [Manage traffic to App Service - Azure Application Gateway | Microsoft Learn](https://learn.microsoft.com/en-us/azure/application-gateway/configure-web-app?tabs=customdomain%2Cazure-portal)
+
+For Active/Active - keep it running. Resource to configure and understand Traffic Manager:
+- [Azure Traffic Manager | Microsoft Learn](https://learn.microsoft.com/en-us/azure/traffic-manager/traffic-manager-overview)
+- [Create a TM Profile - Quickstart: Create a profile for HA of applications - Azure portal - Azure Traffic Manager | Microsoft Learn](https://learn.microsoft.com/en-us/azure/traffic-manager/quickstart-create-traffic-manager-profile)
+- [Routing Method - Azure Traffic Manager - traffic routing methods | Microsoft Learn](https://learn.microsoft.com/en-us/azure/traffic-manager/traffic-manager-routing-methods)
+- [Endpoint - Manage endpoints in Azure Traffic Manager | Microsoft Learn](https://learn.microsoft.com/en-us/azure/traffic-manager/traffic-manager-manage-endpoints)
+- [Endpoint Monitoring - Azure Traffic Manager endpoint monitoring | Microsoft Learn](https://learn.microsoft.com/en-us/azure/traffic-manager/traffic-manager-monitoring)
+
 In case you opt for Azure Front Door: 
-Quickstart: How to use Azure Front Door Service to enable high availability - Azure portal | Microsoft Learn
-Tutorial: Create a WAF policy for Azure Front Door - Azure portal | Microsoft Learn
-Traffic routing methods to origin - Azure Front Door | Microsoft Learn
-Health probes - Azure Front Door | Microsoft Learn
+- [Quickstart: How to use Azure Front Door Service to enable high availability - Azure portal | Microsoft Learn](https://learn.microsoft.com/en-us/azure/frontdoor/quickstart-create-front-door#create-a-front-door-for-your-application)
+- [Tutorial: Create a WAF policy for Azure Front Door - Azure portal | Microsoft Learn](https://learn.microsoft.com/en-us/azure/web-application-firewall/afds/waf-front-door-create-portal?toc=%2Fazure%2Ffrontdoor%2Ftoc.json)
+- [Traffic routing methods to origin - Azure Front Door | Microsoft Learn](https://learn.microsoft.com/en-us/azure/frontdoor/routing-methods)
+- [Health probes - Azure Front Door | Microsoft Learn](https://learn.microsoft.com/en-us/azure/frontdoor/health-probes)
 
 **Azure Key Vault**
 
 For most Azure regions that are paired with another region, the contents of your key vault are replicated both within the region and to the paired region. The paired region is usually at least 150 miles away, but within the same geography. This approach ensures high durability of your keys and secrets. For more information about Azure region pairs, see Azure paired regions. Two exceptions are the Brazil South region, which is paired to a region in another geography, and the West US 3 region. When you create key vaults in Brazil South or West US 3, they aren't replicated across regions.
+
 For non-paired Azure regions, as well as the Brazil South and West US 3 regions, Azure Key Vault uses zone redundant storage (ZRS) to replicate your data three times within the region, across independent availability zones. For Azure Key Vault Premium, two of the three zones are used to replicate the hardware security module (HSM) keys.
 You can also use the backup and restore feature to replicate the contents of your vault to another region of your choice.
 
-Azure Key Vault availability and redundancy - Azure Key Vault | Microsoft Learn
+[Azure Key Vault availability and redundancy - Azure Key Vault | Microsoft Learn](https://learn.microsoft.com/en-us/azure/key-vault/general/disaster-recovery-guidance#failover-across-regions)
 
 **Azure Private DNS Zone**
 
- DNS private zones are resilient to regional outages because zone data is globally available. Resource records in a private zone are automatically replicated across regions. To make sure the secondary region can connect with the DNZ Zone, we need to link the secondary region v-net. Quickstart - Create an Azure private DNS zone using the Azure portal | Microsoft Learn
-This architecture uses functionality of private endpoints that may not be commonly encountered when doing single region deployments.
-First, an individual service can have multiple private endpoints attached to it. For example, a storage account could have a private endpoint for its blob containers located in multiple different virtual networks, and each one functions independently.
-However, this pattern isn't used often in hub and spoke scenarios because a Private DNS Zone can only have one record for a private endpoint. If you register your first private endpoint to your Private DNS Zone, other private endpoints would need to use other zones.
-In addition, the private endpoints aren't required to be in the same region as the resource they're connecting to. A storage account in East US 2 can have a private endpoint deployed in Central US, to give one example.
-So long as there's an alternate Private DNS Zone for that region, resources in the second can resolve and interact with the storage account.
-It's common to use private endpoints located in the same region to reduce costs. But when considering failover, this functionality can allow regional private networking to work despite failures in one region.
+DNS private zones are resilient to regional outages because zone data is globally available. Resource records in a private zone are automatically replicated across regions. To make sure the secondary region can connect with the DNZ Zone, we need to link the secondary region v-net. 
 
-Scenarios-
-If Application Gateway in the primary region goes down – In the current setup – Active/Passive - Cold Spare, the Application Gateway and App service in the secondary region is in stopped state. So, it needs to be turned on along with the App Service to perform the failover. The other services are up and running and their endpoints do not require any change in the application code. One thought might be along the latency due to the switchover of web app to the secondary region.
-If App service in the primary region is down – Refer Scenario 1
-If APIM in the primary region is down – Gateway configurations such as APIs and policy definitions are regularly synchronized between the primary and secondary regions you add. Propagation of updates to the regional gateways normally takes less than 10 seconds. Multi-region deployment provides availability of the API gateway in more than one region and provides service availability if one region goes offline. If a region goes offline, API requests are automatically routed around the failed region to the next closest gateway. If the primary region goes offline, the API Management management plane and developer portal become unavailable, but secondary regions continue to serve API requests using the most recent gateway configuration.
-Azure SQL in the primary region is down – We are utilizing an Auto-Failover group so, it would automatically failover to the secondary database, and nothing needs to be changed unless you have manual failover enabled. You might want to consider complete failover here, since latency can cause a degraded performance.
-Azure Storage Account is down – It is enabled with GRS. So, we need to initiate a failover Initiate a storage account failover - Azure Storage | Microsoft Learn
-Azure Key Vault is down – Nothing needs to be done
-Entire region is down – Manually start the AppGw and App service instances in secondary and perform manual failovers for other services like SQL and Storage Account.
+Quickstart - Create an Azure private DNS zone using the Azure portal | Microsoft Learn
+
+This architecture uses functionality of private endpoints that may not be commonly encountered when doing single region deployments. First, an individual service can have multiple private endpoints attached to it. For example, a storage account could have a private endpoint for its blob containers located in multiple different virtual networks, and each one functions independently. However, this pattern isn't used often in hub and spoke scenarios because a Private DNS Zone can only have one record for a private endpoint. If you register your first private endpoint to your Private DNS Zone, other private endpoints would need to use other zones.
+
+In addition, the private endpoints aren't required to be in the same region as the resource they're connecting to. A storage account in East US 2 can have a private endpoint deployed in Central US, to give one example.
+
+So long as there's an alternate Private DNS Zone for that region, resources in the second can resolve and interact with the storage account. It's common to use private endpoints located in the same region to reduce costs. When considering failover, this functionality can allow regional private networking to work despite failures in one region.
+
+**Scenarios & Considerations**
+- If Application Gateway in the primary region goes down. In the current setup, Active/Passive, Cold Spare, the Application Gateway and App service in the secondary region is in stopped state. So, it needs to be turned on along with the App Service to perform the failover. The other services are up and running and their endpoints do not require any change in the application code. One consideration should be around the latency that will be uncurred due to the switchover of web app to the secondary region.
+- If App service in the primary region is down – Refer Scenario 1
+- If APIM in the primary region is down – Gateway configurations such as APIs and policy definitions are regularly synchronized between the primary and secondary regions you add. Propagation of updates to the regional gateways normally takes less than 10 seconds. Multi-region deployment provides availability of the API gateway in more than one region and provides service availability if one region goes offline. If a region goes offline, API requests are automatically routed around the failed region to the next closest gateway. If the primary region goes offline, the API Management management plane and developer portal become unavailable, but secondary regions continue to serve API requests using the most recent gateway configuration.
+- Azure SQL in the primary region is down – We are utilizing an Auto-Failover group so, it would automatically failover to the secondary database, and nothing needs to be changed unless you have manual failover enabled. You might want to consider complete failover here, since latency can cause a degraded performance.
+- Azure Storage Account is down – It is enabled with GRS. So, we need to initiate a failover Initiate a storage account failover - [Azure Storage | Microsoft Learn](https://learn.microsoft.com/en-us/azure/storage/common/storage-initiate-account-failover?tabs=azure-portal)
+- Azure Key Vault is down – Nothing needs to be done
+- Entire region is down – Manually start the AppGw and App service instances in secondary and perform manual failovers for other services like SQL and Storage Account.
 
 **Composite Availability Estimate**
 
-Prior to the implementation of secondary region across this workloads architecture we had a baseline composite availability estimate, shown below in the table. The calculated estimate is intended to be used as a rough-order-of-magnitude (ROM) estimate for the general availability of a workload based on the design and dependency chain of each critical flow. Below is a table showing the availability metrics before and after remediation for each of the critical flows and for the entire architecture.
+Availability Calculations are intended to be used as a rough-order-of-magnitude (ROM) estimate for the general availability of a workload based on the design and dependency chain of each critical flow. It is a great way to understand how design decisions relating to both the infrastructure in Azure and your application code play a role is a workloads level of potential availability.
 
-Call to Action: Using the Composite Availability Estimate Calculator, work out the Project Max Minutes of Downtime/month and the Composite Availability Target to compare the before and after based on the changes you have made.
-
-
+> **Call to Action:** Using the Microsoft Composite Availability Estimate Calculator (CATE), work out the Max Minutes of Downtime/month and the Composite Availability Target for the architecture and its critical flows to compare the before and after based on leveraging a single region & one of the multi-region strategies. For a table of details about the critical flows, read the [workload preface](../../docs/workloadPreface.md).
 
 
 ### Final Thoughts
-
-Summarize the end of this scenario.
 Given that all services are now configured to handle regional failures, what would you need to perform a complete failover to the secondary region? Currently, you would need to manually failover or start/stop different components to play out the scenario. 
 However, is this what you need in real-time? Wouldn’t you like to automate the failover completely? What would that need? How many or which services being down simultaneously would qualify for a complete failover?
 One alternative can be to utilize logs being sent to Event Hub which ingests it to Azure Stream Analytics to query the logs. Based on the result of the query, you can trigger an Azure Function to start/stop and initiate automatic failover to different services or maybe in turn trigger a Logic App workflow to send notifications to get approvals.
