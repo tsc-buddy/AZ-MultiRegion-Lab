@@ -4,9 +4,9 @@ In this scenario you will be working with the Scenario 2 PaaS infrastructure arc
 
 It has been configured to use Multi Zones for all the components/services. However, given the criticality of the workload and recent incidents of Service outage in the entire region, the use of “Multiple Regions” has been identified as critical to mitigating region level failures moving forward. Along with the services, we need a comprehensive architecture to support different scenarios with Multiple Regions – Active/Active and Active/Passive and so on.
 
-
 There are multiple ways to achieve this requirement, the below is just one variation that would meet ACME’s requirements.
 
+![scenario3](../../docs/images/scenario-3.jpg)
 
 ### Getting Started
 To begin the lab, your first step is to deploy the synthetic workload. This will deploy the Azure Infrastructure shown in the architecture above into a single resource group called rg-waf-mrn-lab-scenario-3. Ensure you have the prerequisites above complete before following the steps below.
@@ -23,11 +23,7 @@ If you dont want to deploy application gateway, please change the parameter “c
 
 ### User / Dataflow Considerations
 
-In all the three data flows, we have identified two critical user / dataflows:
-- Time Tracking User Flow
-- Project Financial Stats.
-
-For these critical ones, we need to consider their failure modes and how that would impact the user experience. So, let’s assume if a service like SQL goes down, how would that impact the user / dataflow. It would certainly cause timeouts, latency and therefore performance issues while increasing the response time in case of a partial failover, in this case SQL servicing from the secondary region.
+For each critical flow, we need to consider their failure modes and how that would impact the user experience. So, let’s assume if a service like SQL goes down, how would that impact the user / dataflow. It would certainly cause timeouts, latency and therefore performance issues while increasing the response time in case of a partial failover, in this case SQL servicing from the secondary region.
 
 Hence, it becomes important to consider if a critical service like SQL being down warrants a complete failover. 
 We will be remediating at each component level to support failover scenarios, however before we go any further and start deploying configurations across services to support Multi Region Architecture, we need to understand certain pieces which are of utmost importance in deciding the SKUs, configurations and directly impacting your cost, resiliency and performance of the workload.
@@ -55,8 +51,6 @@ Warm spare - One primary region and one or more secondary regions. The secondary
 To read more on these strategies, following this link. Recommendations for highly available multi-region design - Microsoft Azure Well-Architected Framework | Microsoft Learn
 It is important to note that choosing the appropriate strategy will have multiple implications on cost, operational overhead, security and how you achieve your availability targets. 
 
-
-
 ### Which secondary region to use? 
 
 Selecting a secondary region in Azure for a multi-region architecture involves several key considerations to ensure high availability, disaster recovery, and optimal performance. Here's an example structured approach to making this decision:
@@ -74,10 +68,10 @@ Planned Azure system updates are rolled out to paired regions sequentially to mi
 In most cases, regional pairs reside within the same geography to meet data residency requirements.
 Most PaaS services have geo replication capability which replicates only amongst paired regions.
 
- 3. Compliance and Legal Requirement 
+3. Compliance and Legal Requirement 
 4. Service Availability
    - Service Parity: Ensure that the secondary region supports all the services and features required by your workload. Some Azure services may not be available in all regions.
- 5. Performance and Latency
+5. Performance and Latency
    - Network Latency: Consider the network latency between the primary and secondary regions to ensure that replication and failover processes meet your performance requirements.
    - User Base Proximity: Factor in the proximity to your end-users if the secondary region might serve traffic during failover scenarios.
 6. Disaster Recovery Objectives
@@ -94,9 +88,9 @@ Example Process:
 6. Finalize Choice: Select the secondary region that best aligns with your disaster recovery objectives, performance needs, and budget constraints.
  
 Azure Resources:
-- Azure Region Pairs: https://docs.microsoft.com/en-us/azure/best-practices-availability-paired-regions
-- Service Availability by Region: https://azure.microsoft.com/en-us/global-infrastructure/services/
-- Compliance Offerings: https://docs.microsoft.com/en-us/azure/compliance/
+- [Azure Region Pairs:](https://docs.microsoft.com/en-us/azure/best-practices-availability-paired-regions) 
+- [Service Availability by Region:](https://azure.microsoft.com/en-us/global-infrastructure/services/)
+- [Compliance Offerings:](https://docs.microsoft.com/en-us/azure/compliance/)
  
 You also need to consider if you are selecting the Regions where we have restrictions by design or are non-paired regions: 
 
@@ -112,6 +106,8 @@ By following these steps, you can choose a secondary Azure region that ensures h
 ### Load Balancing
 
 The first step is to identify a load balancer to support multiple regions. There are multiple 1st party options in Azure. When selecting a load balancer, ensure you have a clear understanding of your requirements to select the option with the appropriate features. The two primary options available are Azure Front Door and Azure Traffic Manager. Below are some key considerations and a decision tree to help guide you to the correct decision.
+
+![LoadBalancingDecision](https://learn.microsoft.com/en-us/azure/architecture/guide/technology-choices/images/load-balancing-decision-tree.png)
 
 #### Failover Speed
 **Front Door**: Provides rapid failover with its Layer 7 capabilities, including SSL offload, path-based routing, and caching. This ensures high performance and availability, as well as quicker packet travel times since traffic is onboarded to the Azure network sooner.
@@ -131,49 +127,63 @@ The first step is to identify a load balancer to support multiple regions. There
 Additional Considerations – If using AFD, can you explore not having AppGW?! Also, could you leverage CDN capability for your front-end and scale that layer of your architecture? How cost effective can it be to use AFD with WAF instead of Traffic Manager and Application Gateway with WAF?
 1-2:  Load-balancing options - Azure Architecture Center | Microsoft Learn
 
-
-
-### Steps to remediate
+## Steps to remediate
 The objective of this lab is to implement and explore one or more of the common design strategies below around Multi-Region designs. 
 
-#### Data Layer
+### Data Layer
 The next layer we are going to focus on is the Data Layer, for this workload it consists of Azure Storage account and Azure SQL Single DB.
 
-**SQL Database Steps **
+**SQL Database Steps**
 Azure SQL Databases are used to store information relating to the application, data such as projects, engineer profiles, capacity project, time logging etc. You can use SQL Management Studio to connect to the DB should you wish.
-Active-Geo Replication 
-Auto-Failover group
 
 Active geo-replication is a feature that lets you continuously replicate data from a primary database to a readable secondary database. The readable secondary database might be in the same Azure region as the primary, or, more commonly, in a different region. This kind of readable secondary database is also known as a geo-secondary or geo-replica.
 
-Active geo-replication is configured per database, and only supports manual failover. To fail over a group of databases, or if your application requires a stable connection endpoint, consider Failover groups instead.
-The failover groups feature allows you to manage the replication and failover of databases to another Azure region. You can choose all, or a subset of, user databases in a logical server to be replicated to another logical server. It's a declarative abstraction on top of the active geo-replication feature, designed to simplify deployment and management of geo-replicated databases at scale.
-Configure using Tutorial: Geo-replication & failover in portal - Azure SQL Database | Microsoft Learn or Configure a failover group - Azure SQL Database | Microsoft Learn  depending on the option you choose.
-In this lab, we are using an auto failover group to get a stable connection endpoint. Failover groups provide a read-write and a read-only listener endpoint. Configure your applications to use these endpoints. The listener endpoints automatically update DNS records during failover, redirecting traffic to the new primary database. Use Failover groups overview & best practices - Azure SQL Database | Microsoft Learn to set it up.
-The failovers can be managed by the customer or Microsoft. But if it's MS then it might take some time depending on the grace period and the failover policy for the secondary database to come up which might not suit the RTO & RPO requirements of the customer. So, a common exploration would be how to switch over within the RTO and RPO using customer managed failover. 
+Active geo-replication is configured per database, and only supports manual failover. To fail over a group of databases, or **if your application requires a stable connection endpoint**, consider Failover groups instead.
 
-___Failover groups overview & best practices- Azure SQL Database | Microsoft Learn 
-Disaster recovery guidance - Azure SQL Database | Microsoft Learn
-Perform a recovery drill - Disaster recovery drills - Azure SQL Database | Microsoft Learn___
+The failover groups feature allows you to manage the replication and failover of databases to another Azure region. You can choose all, or a subset of, user databases in a logical server to be replicated to another logical server. It's a declarative abstraction on top of the active geo-replication feature, designed to simplify deployment and management of geo-replicated databases at scale.
+
+Configure using Tutorial: 
+- [Geo-replication & failover in portal - Azure SQL Database | Microsoft Learn](https://learn.microsoft.com/en-us/azure/azure-sql/database/active-geo-replication-configure-portal?view=azuresql&tabs=portal)
+- [Configure a failover group - Azure SQL Database | Microsoft Learn](https://learn.microsoft.com/en-us/azure/azure-sql/database/failover-group-configure-sql-db?view=azuresql&tabs=azure-portal%2Cazure-powershell-manage&pivots=azure-sql-single-db)
+
+In this lab, we are using an auto failover group to get a stable connection endpoint. Failover groups provide a read-write and a read-only listener endpoint. Configure your applications to use these endpoints. The listener endpoints automatically update DNS records during failover, redirecting traffic to the new primary database. 
+
+Use Failover groups overview & best practices to set it up. - [Azure SQL Database | Microsoft Learn](https://learn.microsoft.com/en-us/azure/azure-sql/database/failover-group-sql-db?view=azuresql#using-read-write-listener-for-oltp-workload)
+
+The failovers can be managed by the customer or Microsoft. But if it's Microsoft, then it might take some time depending on the grace period and the failover policy for the secondary database to come up which might not suit the RTO & RPO requirements of the customer. So, a path to explore would be how to switch over within the RTO and RPO using customer managed failover. 
+
+- [Failover groups overview & best practices- Azure SQL Database | Microsoft Learn ](https://learn.microsoft.com/en-us/azure/azure-sql/database/failover-group-sql-db?view=azuresql#failover-policy)
+- [Disaster recovery guidance - Azure SQL Database | Microsoft Learn](https://learn.microsoft.com/en-us/azure/azure-sql/database/disaster-recovery-guidance?view=azuresql#outage-recovery-guidance)
+
+To learn how to perform a recovery drill, follow this documentation - [Disaster recovery drills - Azure SQL Database | Microsoft Learn](https://learn.microsoft.com/en-us/azure/azure-sql/database/disaster-recovery-drills?view=azuresql)
 
 For Active-Active, one alternative can be to utilize - Azure Cosmos DB. This service can globally distribute data by transparently replicate the data to all regions in your Azure Cosmos DB account. You can also configure Azure Cosmos DB with multiple write regions. 
-Storage Account Steps
+
+**Storage Account Steps**
 The storage account is used to store specific content related to the application, file uploads by users, generated reports etc. Follow the steps below to migrate the deployed storage account from its current state to our desired state. Use Azure Storage Explorer to understand any downtime implications.
 
 Open Azure Storage explorer on your workstation and connect to the storage account that was deployed during the bicep deployment.
 Once you have successfully connected, ensure you can create, upload and download blobs.
 
 Follow the steps here to migrate to Multi Region support. You will notice there are two migration options, follow ‘Option one – customer initiated’ for the purpose of this lab.
-Migrate Azure Storage accounts to multi region support | Microsoft Learn
+
+[Migrate Azure Storage accounts to multi region support | Microsoft Learn](https://learn.microsoft.com/en-us/azure/reliability/migrate-storage#option-1-conversion)
 
 You will notice that for the option we selected, there will be no impact on the availability of the storage account, however, it is not immediate and could take up to 72 hours to complete. This is something to keep in mind when conducting a migration to from ZRS to another resiliency type as the timing may play a role in ones remediation strategy.
-There are failover considerations to go through if we use private endpoints - Failover considerations for storage accounts with private endpoints - Azure Storage | Microsoft Learn
-Microsoft-managed failover can't be initiated for individual storage accounts, subscriptions, or tenants. For more details see Microsoft-managed failover.
-Your disaster recovery plan should be based on customer-managed failover. Do not rely on Microsoft-managed failover, which would only be used in extreme circumstances.
-Because geo-replication is asynchronous, it is possible that data written to the primary region has not yet been written to the secondary region at the time an outage occurs. The Last Sync Time property indicates the most recent time that data from the primary region is guaranteed to have been written to the secondary region. For accounts that have a hierarchical namespace, the same Last Sync Time property also applies to the metadata managed by the hierarchical namespace, including ACLs. All data and metadata written prior to the last sync time is available on the secondary, while data and metadata written after the last sync time may not have been written to the secondary, and may be lost. Use this property in the event of an outage to estimate the amount of data loss you may incur by initiating an account failover. Check the Last Sync Time property for a storage account - Azure Storage | Microsoft Learn
-To initiate a failover Initiate a storage account failover - Azure Storage | Microsoft Learn
- For Active-Active, you can also utilize RA-GRS.
-Considerations for Storage Account Failover with Private Endpoints - Failover considerations for storage accounts with private endpoints - Azure Storage | Microsoft Learn
+There are failover considerations to go through if we use private endpoints.
+
+- [Failover considerations for storage accounts with private endpoints - Azure Storage | Microsoft Learn](https://learn.microsoft.com/en-us/azure/storage/common/storage-failover-private-endpoints?toc=%2Fazure%2Fstorage%2Fblobs%2Ftoc.json&bc=%2Fazure%2Fstorage%2Fblobs%2Fbreadcrumb%2Ftoc.json)
+
+Microsoft-managed failover can't be initiated for individual storage accounts, subscriptions, or tenants. For more details see Microsoft-managed failover. Your disaster recovery plan should be based on customer-managed failover. Do not rely on Microsoft-managed failover, which would only be used in extreme circumstances.Because geo-replication is asynchronous, it is possible that data written to the primary region has not yet been written to the secondary region at the time an outage occurs. 
+
+The Last Sync Time property indicates the most recent time that data from the primary region is guaranteed to have been written to the secondary region. For accounts that have a hierarchical namespace, the same Last Sync Time property also applies to the metadata managed by the hierarchical namespace, including ACLs. All data and metadata written prior to the last sync time is available on the secondary, while data and metadata written after the last sync time may not have been written to the secondary, and may be lost.
+
+Use this property in the event of an outage to estimate the amount of data loss you may incur by initiating an account failover. 
+
+- [Check the Last Sync Time property for a storage account - Azure Storage | Microsoft Learn](https://learn.microsoft.com/en-us/azure/storage/common/last-sync-time-get?toc=%2Fazure%2Fstorage%2Fblobs%2Ftoc.json&bc=%2Fazure%2Fstorage%2Fblobs%2Fbreadcrumb%2Ftoc.json&tabs=azure-powershell)
+
+[To initiate a storage account failover - Azure Storage | Microsoft Learn](https://learn.microsoft.com/en-us/azure/storage/common/storage-initiate-account-failover?tabs=azure-portal)
+For Active-Active, you can also utilize RA-GRS. Considerations for Storage Account Failover with Private Endpoints - [Failover considerations for storage accounts with private endpoints - Azure Storage | Microsoft Learn](https://learn.microsoft.com/en-us/azure/storage/common/storage-failover-private-endpoints?toc=%2Fazure%2Fstorage%2Fblobs%2Ftoc.json&bc=%2Fazure%2Fstorage%2Fblobs%2Fbreadcrumb%2Ftoc.json)
 
 **API Management**
 
