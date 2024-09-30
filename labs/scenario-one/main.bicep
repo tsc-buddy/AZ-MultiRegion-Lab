@@ -35,24 +35,21 @@ targetScope = 'subscription'
   'qatarcentral'
 ])
 @description('The Azure region you wish to deploy to. It must support availability zones.')
-param location string = 'eastus2'
+param location string
 
-var rgName1 = 'rg-waf-az-lab-scenario-1'
-var vnetName = 'SpokeVNet01'
+@description('Required. Enable this if you want to deploy the hub network configuration.')
+param deployHub bool
+
+@secure()
+@description('The password for the local admin account on the VMs.')
+param localAdminPW string
+
+var rgName = 'rg-waf-az-lab-scenario-1'
+var vnetName = 's1-spokevnet-${uniqueString(subscription().id)}'
 var appGWName = 's1-appgw-${uniqueString(subscription().id)}'
-var vnet2Name = 'coreVNet'
 var ilbName = 's1-ilb-${uniqueString(subscription().id)}'
-var ergatewayname = 's1-ergw-${uniqueString(subscription().id)}'
-
-
-var localadminpw = 'MzMrL@bM@ch1ne$Axc3s$p#Raz3'
-
 var localadmin = 'azureadmin'
 
-resource resourceGroup1 'Microsoft.Resources/resourceGroups@2021-04-01' = {
-  name: rgName1
-  location: location
-}
 var webTierSpec = [
   {
     name: 'webServ01'
@@ -96,17 +93,42 @@ var dataTierSpec = [
   }
 ]
 
+var vnetAddressPrefix = [
+  '172.16.0.0/16'
+]
+var subnetSpec = [
+  {
+    name: 'appGatewaySubnet'
+    addressPrefix: '172.16.1.128/25'
+  }
+  {
+    name: 'frontEndSubnet'
+    addressPrefix: '172.16.1.0/25'
+  }
+  {
+    name: 'appTierSubnet'
+    addressPrefix: '172.16.2.0/25'
+  }
+  {
+    name: 'dataSubnet'    
+    addressPrefix: '172.16.2.128/25'
+  }
+]
 
+resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
+  name: rgName
+  location: location
+}
 // NSGs for web, app and data tiers
 
 module networkSecurityGroup1 'br/public:avm/res/network/network-security-group:0.3.1' = {
-  scope : resourceGroup1
+  scope : resourceGroup
   name: 'nsgDeployment1'
   params: {
     // Required parameters
     name: 'webNsg'
     // Non-required parameters
-    location: resourceGroup1.location 
+    location: location
     securityRules: [
       {
         name: 'allow_appgw_inbound'
@@ -144,32 +166,10 @@ module networkSecurityGroup1 'br/public:avm/res/network/network-security-group:0
   }
 }
 
-var vnetAddressPrefix = [
-  '172.16.0.0/16'
-]
-var subnetSpec = [
-  {
-    name: 'appGatewaySubnet'
-    addressPrefix: '172.16.1.128/25'
-  }
-  {
-    name: 'frontEndSubnet'
-    addressPrefix: '172.16.1.0/25'
-  }
-  {
-    name: 'appTierSubnet'
-    addressPrefix: '172.16.2.0/25'
-  }
-  {
-    name: 'dataSubnet'    
-    addressPrefix: '172.16.2.128/25'
-  }
-]
-
 //Spoke Network configuration
-module virtualNetwork 'br/public:avm/res/network/virtual-network:0.1.6' = {
+module spokeVnet 'br/public:avm/res/network/virtual-network:0.1.6' = {
   name: vnetName
-  scope: resourceGroup1
+  scope: resourceGroup
   params: {
     name: vnetName
     addressPrefixes: vnetAddressPrefix
@@ -187,7 +187,7 @@ module virtualNetwork 'br/public:avm/res/network/virtual-network:0.1.6' = {
 //VMs for Web Tier
 module webvirtualMachine 'br/public:avm/res/compute/virtual-machine:0.5.3' = [for webserver in webTierSpec: {
   name: webserver.name
-  scope: resourceGroup1
+  scope: resourceGroup
   params: {
     // Required parameters
     adminUsername: localadmin
@@ -204,7 +204,7 @@ module webvirtualMachine 'br/public:avm/res/compute/virtual-machine:0.5.3' = [fo
         ipConfigurations: [
           {
             name: 'ipconfig01'
-            subnetResourceId: virtualNetwork.outputs.subnetResourceIds[1]
+            subnetResourceId: spokeVnet.outputs.subnetResourceIds[1]
           }
         ]
         nicSuffix: '-nic-01'
@@ -219,19 +219,19 @@ module webvirtualMachine 'br/public:avm/res/compute/virtual-machine:0.5.3' = [fo
       }
     }
     osType: 'Windows'
-    vmSize: 'Standard_DS2_v2'
-    adminPassword: localadminpw
+    vmSize: 'Standard_D2s_v5'
+    adminPassword: localAdminPW
   } 
   
   dependsOn: [
-    virtualNetwork
+    spokeVnet
   ]
   }
 ]
 
 //VMs for App Tier
 module virtualMachine 'br/public:avm/res/compute/virtual-machine:0.5.3' = [for app in appTierSpec: {
-  scope: resourceGroup1
+  scope: resourceGroup
   name: app.name
   params: {
     // Required parameters
@@ -250,7 +250,7 @@ module virtualMachine 'br/public:avm/res/compute/virtual-machine:0.5.3' = [for a
         ipConfigurations: [
           {
             name: 'ipconfig01'
-            subnetResourceId: virtualNetwork.outputs.subnetResourceIds[2]
+            subnetResourceId: spokeVnet.outputs.subnetResourceIds[2]
           }
         ]
         nicSuffix: '-nic-01'
@@ -264,15 +264,15 @@ module virtualMachine 'br/public:avm/res/compute/virtual-machine:0.5.3' = [for a
       }
     }
     osType: 'Windows'
-    vmSize: 'Standard_DS2_v2'
-    adminPassword: localadminpw
+    vmSize: 'Standard_D2s_v5'
+    adminPassword: localAdminPW
     tags:{
       Environment: 'Production'
       Role: 'AppServer'
     }
   }
     dependsOn: [
-    virtualNetwork
+    spokeVnet
   ]
   }
 ]
@@ -280,14 +280,14 @@ module virtualMachine 'br/public:avm/res/compute/virtual-machine:0.5.3' = [for a
 // ILB for app tier
 
 module loadBalancer 'br/public:avm/res/network/load-balancer:0.2.2' = {
-  scope: resourceGroup1
+  scope: resourceGroup
   name: 'loadBalancerDeployment'
   params: {
     // Required parameters
     frontendIPConfigurations: [
       {
         name: 'privateIPConfig1'
-        subnetId: virtualNetwork.outputs.subnetResourceIds[2]
+        subnetId: spokeVnet.outputs.subnetResourceIds[2]
       }
     ]
     name: ilbName
@@ -347,7 +347,7 @@ module loadBalancer 'br/public:avm/res/network/load-balancer:0.2.2' = {
 
 //VMs for Data Tier
 module sqlvirtualMachine 'br/public:avm/res/compute/virtual-machine:0.5.3' = [for sql in dataTierSpec: {
-  scope: resourceGroup1
+  scope: resourceGroup
   name: sql.name
   params: {
     // Required parameters
@@ -366,7 +366,7 @@ module sqlvirtualMachine 'br/public:avm/res/compute/virtual-machine:0.5.3' = [fo
         ipConfigurations: [
           {
             name: 'ipconfig01'
-            subnetResourceId: virtualNetwork.outputs.subnetResourceIds[3]
+            subnetResourceId: spokeVnet.outputs.subnetResourceIds[3]
           }
         ]
         nicSuffix: '-nic-01'
@@ -380,96 +380,41 @@ module sqlvirtualMachine 'br/public:avm/res/compute/virtual-machine:0.5.3' = [fo
       }
     }
     osType: 'Windows'
-    vmSize: 'Standard_DS2_v2'
-    adminPassword: localadminpw
+    vmSize: 'Standard_D4s_v5'
+    adminPassword: localAdminPW
   } 
   dependsOn: [
-    virtualNetwork
+    spokeVnet
   ]
   }
 ]
 
 module appGW1 'layers/appgw.bicep' = {
-  scope: resourceGroup1
+  scope: resourceGroup
   name: 'appGW1'
   params: {
     appGWName: appGWName
-    appGWSubnetId: virtualNetwork.outputs.subnetResourceIds[0]
+    appGWSubnetId: spokeVnet.outputs.subnetResourceIds[0]
     bePoolName: 'web-be-pool'
     location: location
   }
 }
-
-//Setting up Core VNet
-
-var corevnetAddressPrefix = [
-  '172.17.0.0/16'
-]
-var coresubnetSpec = [
-  {
-    name: 'coreSubnet'
-    addressPrefix: '172.17.0.0/24'
-  }
-  {
-    addressPrefix: '172.17.1.0/25'
-    name: 'GatewaySubnet'
-  }
-  {
-    addressPrefix: '172.17.2.0/25'
-    name: 'AzureFirewallSubnet'
-  }
-]
-
-module coreVirtualNetwork 'br/public:avm/res/network/virtual-network:0.1.6' = {
-  name: vnet2Name
-  scope: resourceGroup1
-  params: {
-    name: vnet2Name
-    addressPrefixes: corevnetAddressPrefix
-    peerings: [
-      {
-        allowForwardedTraffic: true
-        allowGatewayTransit: true
-        allowVirtualNetworkAccess: true
-        remotePeeringAllowForwardedTraffic: true
-        remotePeeringAllowVirtualNetworkAccess: true
-        remotePeeringEnabled: true
-        remotePeeringName: 'hubToSpoke'
-        remoteVirtualNetworkId: virtualNetwork.outputs.resourceId
-        useRemoteGateways: false
-      }
-    ]
-    subnets: [
-      for subnets in coresubnetSpec: {
-        name: subnets.name
-        addressPrefix: subnets.addressPrefix
-      }      
-    ]
-  }
-}
-
 //create Key Vault
 module kvcreate 'layers/kvcreate.bicep' = {
-  scope: resourceGroup1
+  scope: resourceGroup
   name : 'keyvault'
   params: {
-    location: resourceGroup1.location
-    adminPassword: localadminpw
+    location: location
+    adminPassword: localAdminPW
   }
 
 }
 
-// gateway create
-module virtualNetworkGateway 'br/public:avm/res/network/virtual-network-gateway:0.1.4' = {
-  scope: resourceGroup1
-  name: 'virtualNetworkGatewayDeployment'
+module hubConfiguration 'layers/hub.bicep' = if (deployHub) {
+  scope: resourceGroup
+  name: 'hubConfiguration'
   params: {
-    // Required parameters
-    gatewayType: 'ExpressRoute'
-    name: ergatewayname
-    skuName: 'Standard'
-    vNetResourceId: coreVirtualNetwork.outputs.resourceId
-    // Non-required parameters
-    location: resourceGroup1.location
+    location: location
+    remoteVNetId: spokeVnet.outputs.resourceId
   }
 }
