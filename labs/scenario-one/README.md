@@ -27,8 +27,9 @@ AZ-MultiRegion-Lab/labs at main · tsc-buddy/AZ-MultiRegion-Lab (github.com)
 2.	Open up the Github Repo Directory in VS Code and load up terminal, logging into Azure Powershell or Azure CLI.
 3.	Ensure you are in the correct context for deploying resources.
 4.	CD into the Labs\scenario-one directory
-5.	Run the following deployment command.
-    1.	PS - New-azSubscriptionDeployment -Location <location> -TemplateFile .\labs\scenario-one\main.bicep -verbose -name <PROVIDE DEPLOYMENT NAME>
+5.	Open the scenario-one.bicepparam file and update the parameters to your desired values.
+6.	Run the following deployment command.
+    1.	PS - New-azSubscriptionDeployment -Location <location> -TemplateFile .\labs\scenario-one\main.bicep -TemplateParameterFile .\scenario-one.bicepparam -verbose -name <PROVIDE DEPLOYMENT NAME>
     2.	AZ CLI - az deployment sub create --location <location> --template-file ./labs/scenario-one/main.bicep
 
 <br>
