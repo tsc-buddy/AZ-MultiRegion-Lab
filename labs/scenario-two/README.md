@@ -15,11 +15,11 @@ To begin the lab, your first step is to deploy the synthetic workloads infrastru
 4. CD into the Labs\scenario-two directory
 5. Run the following deployment command.
 ```powershell
-PS - New-azSubscriptionDeployment -Location <location> -TemplateFile .\labs\scenario-two\main.bicepm -TemplateParameterFile .\labs\scenario-two\scenario-two.bicepparam -verbose -name <PROVIDE DEPLOYMENT NAME>
+New-azSubscriptionDeployment -Location <location> -TemplateFile .\labs\scenario-two\main.bicep -TemplateParameterFile .\labs\scenario-two\scenario-two.bicepparam -verbose -name <PROVIDE DEPLOYMENT NAME>
 ```
 
 ```bash
-AZ CLI - az deployment sub create --location <location> --template-file ./labs/scenario-two/main.bicep
+az deployment sub create --location <location> --template-file ./labs/scenario-two/main.bicep
 ``` 
 
 
